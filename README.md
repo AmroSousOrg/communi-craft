@@ -3,6 +3,8 @@
 
 A **RESTful API** for building	bridges	through	collaborative craftsmanship, using **Node.js**. 
 
+**Base URL** `http://localhost:8080/api/`
+
 ## Installation
 
 To install the project on your machine
@@ -70,7 +72,7 @@ other developers before merge with dev branch.
 
 ## Links
 
-[postman workspace](https://aswp-team.postman.co/workspace/CommuniCraft~ec8a19c9-86ca-4426-a31e-cbedbb189393)
+[apidog workspace](https://app.apidog.com/project/467103)
 ## Files Structure
 
 ![File Structure](./screenshots/file_structure.png?raw=true "File Structure")
