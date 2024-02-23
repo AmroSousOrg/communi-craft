@@ -2,10 +2,13 @@ const { Router } = require('express');
 
 const router = Router();
 
-/**
- *      Router End-Points starts with
- *      /resources     
- */
+const resourceController=require('../controllers/resourceController');
+
+
+// router.post('/',resourceController.newResources);     
+// router.get('/:id',resourceController.getResourcesById);
+router.get('/',resourceController.getAllResources);
+// router.patch('/:id',resourceController.update);
 
 
 module.exports = router; 

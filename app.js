@@ -24,7 +24,7 @@ const Invitation = require("./src/models/invitation");
 // routers
 const UserRouter = require("./src/routes/userRoute");
 const SkillRouter = require("./src/routes/userRoute");
-const ResourceRouter = require("./src/routes/userRoute");
+const ResourceRouter = require("./src/routes/resourceRoute");
 const ProjectRouter = require("./src/routes/userRoute");
 const MaterialRouter = require("./src/routes/userRoute");
 const InterestRouter = require("./src/routes/userRoute");
