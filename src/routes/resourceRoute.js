@@ -9,6 +9,10 @@ const resourceController=require('../controllers/resourceController');
 // router.get('/:id',resourceController.getResourcesById);
 router.get('/',resourceController.getAllResources);
 // router.patch('/:id',resourceController.update);
+/**
+ *      Router End-Points starts with
+ *      /api/resources     
+ */
 
 
 module.exports = router; 
