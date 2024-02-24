@@ -20,7 +20,8 @@ const notFoundHandler = require("./middlewares/not-found.middleware");
 // models
 const { User } = require("./models");
 // routers
-const routers = require("./routes");
+const Users = require("./routes/userRoute");
+const Resource=require("./routes/resourceRoute");
 
 /**
  *
@@ -49,7 +50,9 @@ app.use(async (req, res, next) => {
 });
 
 // routers configuration
-app.use("/api", routers);
+app.use("/api/resources",Resource);
+app.use("/api/users",Users);
+// app.use("/api", routers);
 
 // error handlers
 app.use(errorHandler);
