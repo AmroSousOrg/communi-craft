@@ -4,7 +4,7 @@ const router = Router();
 
 /**
  *      Router End-Points starts with
- *      /resources     
+ *      /api/resources     
  */
 
 
