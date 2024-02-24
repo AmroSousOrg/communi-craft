@@ -13,4 +13,6 @@ const Skill = sequelize.define(
     }
 );
 
+
+
 module.exports = Skill;
