@@ -1,9 +1,10 @@
 const { User } = require("../models");
+
 /**
  * function to get user profile information
  * from database by id
  */
-exports.getUser = async function getUser(req, res, next) {
+exports.getUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const user = await User.findByPk(userId);
