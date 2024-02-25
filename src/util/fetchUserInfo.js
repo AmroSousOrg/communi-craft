@@ -4,7 +4,7 @@
  * autherization server end-point '/userInfo' depending on the
  * access-token from autherization process.
  *
- * These info used in finding user in our database depending on email field.
+ * These info used in creating account of user in our database
  *
  * @param {string} token - user access-token from authentication
  * @returns object of user info

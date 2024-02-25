@@ -5,7 +5,9 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon src/app.js"
+    "start": "nodemon src/app.js",
+    "auth": "npm-run-all --parallel spa",
+    "spa": "cd auth-react && react-scripts start"
   },
   "repository": {
     "type": "git",
@@ -18,8 +20,30 @@
   },
   "homepage": "https://github.com/AmroSousOrg/communi-craft#readme",
   "devDependencies": {
+    "@auth0/auth0-react": "^2.2.0",
+    "@babel/core": "^7.23",
+    "@babel/plugin-syntax-flow": "^7.23",
+    "@babel/plugin-transform-react-jsx": "^7.23",
+    "@fortawesome/fontawesome-svg-core": "^1.2",
+    "@fortawesome/free-solid-svg-icons": "^5.8",
+    "@fortawesome/react-fontawesome": "^0.2",
+    "@testing-library/jest-dom": "^5.17",
+    "@testing-library/react": "^14.1",
+    "autoprefixer": "^10.4",
+    "express-oauth2-jwt-bearer": "^1.6.0",
+    "highlight.js": "^10.0",
+    "jest-environment-jsdom": "^27.0",
+    "jest-fetch-mock": "^3.0",
     "jsdoc": "^4.0.2",
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.0.3",
+    "npm-run-all": "^4.1",
+    "postcss": "^8.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-router-dom": "^5.3",
+    "react-scripts": "^5.0",
+    "reactstrap": "^9.2",
+    "typescript": "^4.9"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -31,6 +55,7 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
     "mysql2": "^3.9.1",
     "sequelize": "^6.37.0"
   }
