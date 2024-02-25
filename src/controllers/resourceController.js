@@ -103,8 +103,8 @@ const update = (req, res) => {
 
 const deleteById=(req,res)=>{
     const resourceId = req.params.id;
-    const userId = req.user.id;
-    models.Resource.findByPk(resourceId)
+    const userId = req.auth.payload.sub;
+    models.User.findByPk(userId)
         .then(resource => {
             if (!resource) {
                 return res.status(404).json({ message:"Resource not found"});
@@ -122,6 +122,8 @@ const deleteById=(req,res)=>{
             return res.status(500).json({message:"Something went wrong"});
         });
 }
+
+
 module.exports = {
     getAllResources,
     getResourcesById,
