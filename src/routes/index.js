@@ -1,20 +1,17 @@
 const UserRouter = require("./userRoute");
-const SkillRouter = require("./userRoute");
-const ResourceRouter = require("./userRoute");
-const ProjectRouter = require("./userRoute");
-const MaterialRouter = require("./userRoute");
-const InterestRouter = require("./userRoute");
+const SkillRouter = require("./skillRoute");
+const ResourceRouter = require("./resourceRoute");
+const ProjectRouter = require("./projectRoute");
+const MaterialRouter = require("./materialRoute");
+const InterestRouter = require("./interestRoute");
 
-const router = require('express').Router(); 
+const routers = require('express').Router();
 
-/**
- *  Routers prefix URL's
- */
-router.use('/users', UserRouter);
-router.use('/skills', SkillRouter);
-router.use('/resources', ResourceRouter);
-router.use('/projects', ProjectRouter);
-router.use('materials', MaterialRouter);
-router.use('interests', InterestRouter); 
+routers.use('/users', UserRouter);
+routers.use('/projects', ProjectRouter);
+routers.use('/resources', ResourceRouter);
+routers.use('/materials', MaterialRouter);
+routers.use('/skills', SkillRouter);
+routers.use('/interests', InterestRouter);
 
-module.exports = router;
+module.exports = routers;
