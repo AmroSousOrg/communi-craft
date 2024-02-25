@@ -29,6 +29,11 @@ To install the project on your machine
   npm start
 ```
 
+- to run reac-auth-sample for authentication tokens run
+```bash
+  npm run auth
+```
+
 - periodically you have to pull changes made by other developers to you local repo
 
 ## Notes

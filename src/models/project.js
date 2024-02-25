@@ -12,7 +12,7 @@ const Project = sequelize.define(
         description: Sequelize.TEXT, 
         level: {
             type: Sequelize.ENUM, 
-            values: ['Biginner', 'Intermediate', 'Advanced'],
+            values: ['Beginner', 'Intermediate', 'Advanced'],
             allowNull: false
         }, 
         finishedAt: Sequelize.DATE
