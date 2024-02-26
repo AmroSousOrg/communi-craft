@@ -71,63 +71,78 @@ const getAllResources = (req, res) => {
         });
 }
 
-const update = (req, res) => {
-    const resourceId = req.params.id;
-    const userId = req.user.id;
+const updatebyid=(req,res)=>{
+    const resourceId=req.params.id;
+    const userId=req.auth.payload.sub;
     const {name,description,price,quantity}=req.body;
-    const updateResource = {
-        name: name,
-        description: description,
-        price: price,
+
+    const updateResource={
+        name:name,
+        description:description,
+        price:price,
         quantity:quantity
     };
 
-    models.Resource.findByPk(resourceId)
-        .then(resource => {
+    models.User.findByPk(userId)
+        .then(user=>{
+            if (!user) {
+                return res.status(404).json({message:"User not found"});
+            }
+            return models.Resource.findOne({where:{id:resourceId}});
+        })
+        .then(resource=>{
             if (!resource) {
                 return res.status(404).json({message:"Resource not found"});
             }
-            
-            if (resource.owner !== userId) {
-                return res.status(403).json({ message:"You are not authorized to update this resource"});
+            if (resource.owner!== userId) {
+                return res.status(403).json({message:"You are not authorized to update this resource" });
             }
             return resource.update(updateResource);
         })
-        .then(updatedResource=>{
+        .then(()=>{
             return res.status(200).json({message:"Resource updated successfully"});
         })
-        .catch(error=>{
+        .catch(error => {
+            console.error(error);
             return res.status(500).json({message:"Something went wrong"});
         });
 };
+
 
 const deleteById=(req,res)=>{
     const resourceId = req.params.id;
     const userId = req.auth.payload.sub;
     models.User.findByPk(userId)
-        .then(resource => {
-            if (!resource) {
-                return res.status(404).json({ message:"Resource not found"});
-            }
-            
-            if (resource.owner !== userId) {
-                return res.status(403).json({ message:"You are not authorized to delete this resource"});
-            }
-            return resource.destroy(resourceId);
-        })
-        .then(deletedResource=>{
-            return res.status(200).json({message:"Resource deleted successfully"});
-        })
-        .catch(error=>{
-            return res.status(500).json({message:"Something went wrong"});
-        });
+    .then(user=>{
+        if (!user) {
+            return res.status(404).json({message:"User not found"});
+        }
+        return models.Resource.findOne({where:{id:resourceId}});
+    })
+    .then(resource=>{
+        if (!resource){
+            return res.status(404).json({message:"Resource not found"});
+        }
+        if (resource.owner!==userId) {
+            return res.status(403).json({message:"You are not authorized to delete this resource"});
+        }
+
+        return resource.destroy();
+    })
+    .then(()=>{
+        return res.status(200).json({message:"Resource deleted successfully"});
+    })
+    .catch(error => {
+        console.error(error);
+        return res.status(500).json({message:"Something went wrong"});
+    });
 }
 
 
 module.exports = {
     getAllResources,
     getResourcesById,
-    update,
+    updatebyid,
     newResources,
     deleteById
 };

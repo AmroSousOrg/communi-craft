@@ -1,4 +1,5 @@
 const express = require('express');
+const { validateAccessToken } = require('../middlewares/auth0.middleware');
 
 
 const router = express.Router();
@@ -13,8 +14,8 @@ const resourceController=require('../controllers/resourceController');
 router.post('/',resourceController.newResources);     
 router.get('/:id',resourceController.getResourcesById);
 router.get('/',resourceController.getAllResources);
-router.patch('/:id',resourceController.update);
-router.delete('/:id',resourceController.deleteById);
+router.put('/:id',validateAccessToken,resourceController.updatebyid);
+router.delete('/:id',validateAccessToken,resourceController.deleteById);
 
 
 
