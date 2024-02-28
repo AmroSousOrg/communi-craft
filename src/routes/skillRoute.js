@@ -6,5 +6,6 @@ const skillController=require('../controllers/skillController')
  *      Router End-Points starts with
  *      /api/skills     
  */
-router.use('/:id',skillController.getSkillsById);
+router.get('/search',skillController.searchSkills);
+router.get('/:id',skillController.getSkillsById);
 module.exports = router; 
