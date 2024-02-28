@@ -1,8 +1,10 @@
 const models = require("../models");
+const { Op } = require('sequelize');
 
 
 const newResources=(req,res)=>{
-    const {name,description,price,quantity,owner} = req.body;
+    const {name,description,price,quantity} = req.body;
+    const owner=req.auth.payload.sub;
 
     const resources={
         name:name,
@@ -138,6 +140,17 @@ const deleteById=(req,res)=>{
     });
 }
 
+// const searchResources=async (req,res)=>{
+//     try {
+//         const searchTerm = req.query.q;
+//         const query = "SELECT * FROM resource WHERE name LIKE ? OR description LIKE ?";
+//         const result = await queryPromise(query, `%${searchTerm}%`, `%${searchTerm}%`);
+
+//         return res.status(200).json(result);
+//     } catch (e) {
+//         return res.status(500).json(e);
+//     }
+// }
 
 module.exports = {
     getAllResources,
@@ -145,4 +158,5 @@ module.exports = {
     updatebyid,
     newResources,
     deleteById
+    // searchResources
 };
