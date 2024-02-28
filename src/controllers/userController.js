@@ -10,11 +10,11 @@ exports.getUserInfo = async (req, res, next) => {
     try {
         const userId = req.params.id;
         if (!userId) {
-            return next(new CustomError("Bad Cradentials", 409));
+            return next(new CustomError("Bad Request", 400));
         }
         const user = await User.findByPk(userId);
         if (!user) {
-            return next(new CustomError("Not Found", 400));
+            return next(new CustomError("Not Found", 404));
         }
         res.json(user);
     } catch (err) {
@@ -60,13 +60,13 @@ exports.createUser = async (req, res, next) => {
 exports.getUserProjects = async (req, res, next) => {
     try {
         if (!req.params.id) {
-            return next(new CustomError("Bad Cradentials", 409));
+            return next(new CustomError("Bad Request", 400));
         }
 
         const user = await User.findByPk(req.params.id);
 
         if (!user) {
-            return next(new CustomError("Not Found", 400));
+            return next(new CustomError("Not Found", 404));
         }
 
         const projects = await user.getProjects();
@@ -84,11 +84,11 @@ exports.getUserSkills = async (req, res, next) => {
     try {
         const userId = req.params.id;
         if (!userId) {
-            return next(new CustomError("Bad Cradentials", 409));
+            return next(new CustomError("Bad Request", 400));
         }
         const user = await User.findByPk(userId);
         if (!user) {
-            return next({ status: 400 });
+            return next(new CustomError("Not Found", 404));
         }
         const skills = await user.getSkills();
         res.json(skills);
@@ -105,16 +105,16 @@ exports.addUserSkill = async (req, res, next) => {
         const userId = req.auth.payload.sub;
         const skillId = req.body.skill_id;
         if (!skillId) {
-            return next(new CustomError("Bad Cradentials", 401));
+            return next(new CustomError("Bad Request", 400));
         }
 
         const user = await User.findByPk(userId);
         const skill = await Skill.findByPk(skillId);
         if (!user || !skill) {
-            return next(new CustomError("Not Found", 400));
+            return next(new CustomError("Not Found", 404));
         }
 
-        await User.addSkill(skill);
+        await user.addSkills(skill);
         res.status(200).json({ message: "Skill added successfully" });
     } catch (err) {
         next(err);
@@ -128,11 +128,11 @@ exports.getUserInterests = async (req, res, next) => {
     try {
         const userId = req.params.id;
         if (!userId) {
-            return next(new CustomError("Bad Cradentials", 409));
+            return next(new CustomError("Bad Request", 400));
         }
         const user = await User.findByPk(userId);
         if (!user) {
-            return next({ status: 400 });
+            return next(new CustomError("Not Found", 404));
         }
         const interests = await user.getInterests();
         res.json(interests);
@@ -149,16 +149,16 @@ exports.addUserInterest = async (req, res, next) => {
         const userId = req.auth.payload.sub;
         const interestId = req.body.interest_id;
         if (!interestId) {
-            return next(new CustomError("Bad Cradentials", 401));
+            return next(new CustomError("Bad Request", 400));
         }
 
         const user = await User.findByPk(userId);
         const interest = await Interest.findByPk(interestId);
         if (!user || !interest) {
-            return next(new CustomError("Not Found", 400));
+            return next(new CustomError("Not Found", 404));
         }
 
-        await User.addInterest(interest);
+        await user.addInterest(interest);
         res.status(200).json({ message: "Interest added successfully" });
     } catch (err) {
         next(err);
@@ -168,4 +168,6 @@ exports.addUserInterest = async (req, res, next) => {
 /**
  * search on users using query parameters
  */
-exports.searchUser = async (req, res, next) => {};
+exports.searchUser = (req, res, next) => {
+    //
+};
