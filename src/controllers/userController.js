@@ -1,5 +1,6 @@
-const { User, Project, UserProject } = require("../models");
+const { User, Skill, Interest } = require("../models");
 const fetchUserInfo = require("../util/fetchUserInfo");
+const CustomError = require("../util/customError");
 
 /**
  * function to get user profile information
@@ -8,11 +9,12 @@ const fetchUserInfo = require("../util/fetchUserInfo");
 exports.getUserInfo = async (req, res, next) => {
     try {
         const userId = req.params.id;
+        if (!userId) {
+            return next(new CustomError("Bad Request", 400));
+        }
         const user = await User.findByPk(userId);
         if (!user) {
-            const err = new Error("Not Found");
-            err.status = 404;
-            return next(err);
+            return next(new CustomError("Not Found", 404));
         }
         res.json(user);
     } catch (err) {
@@ -26,13 +28,12 @@ exports.getUserInfo = async (req, res, next) => {
  * fetch userInfo, and create account using { sub } value as PK.
  */
 exports.createUser = async (req, res, next) => {
-    // const token = req.get('Authorization').split(' ')[1];
     try {
         const token = req.auth.token;
         // search user id
         const isExist = await User.findByPk(req.auth.payload.sub);
         if (isExist) {
-            return res.status(409).json({ message: "User already exist " });
+            return next(new CustomError("User already exist", 409));
         }
 
         // fetch /userInfo
@@ -47,7 +48,7 @@ exports.createUser = async (req, res, next) => {
         await User.create(user);
 
         // return response
-        res.status(201).json({ message: "User account created successfully." });
+        res.status(201).json({ message: "Created successfully." });
     } catch (err) {
         next(err);
     }
@@ -58,16 +59,17 @@ exports.createUser = async (req, res, next) => {
  */
 exports.getUserProjects = async (req, res, next) => {
     try {
-        const projectsIds = await UserProject.findAll({
-            where: { UserId: req.params.id },
-        });
+        if (!req.params.id) {
+            return next(new CustomError("Bad Request", 400));
+        }
 
-        const projects = await Promise.all(
-            projectsIds.map(async (proj) => {
-                const project = await Project.findByPk(proj.ProjectId);
-                return { project: project.dataValues, role: proj.role };
-            })
-        );
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) {
+            return next(new CustomError("Not Found", 404));
+        }
+
+        const projects = await user.getProjects();
 
         res.json(projects);
     } catch (err) {
@@ -81,7 +83,13 @@ exports.getUserProjects = async (req, res, next) => {
 exports.getUserSkills = async (req, res, next) => {
     try {
         const userId = req.params.id;
+        if (!userId) {
+            return next(new CustomError("Bad Request", 400));
+        }
         const user = await User.findByPk(userId);
+        if (!user) {
+            return next(new CustomError("Not Found", 404));
+        }
         const skills = await user.getSkills();
         res.json(skills);
     } catch (err) {
@@ -92,7 +100,26 @@ exports.getUserSkills = async (req, res, next) => {
 /**
  * add user skill
  */
-exports.addUserSkill = async (req, res, next) => {};
+exports.addUserSkill = async (req, res, next) => {
+    try {
+        const userId = req.auth.payload.sub;
+        const skillId = req.body.skill_id;
+        if (!skillId) {
+            return next(new CustomError("Bad Request", 400));
+        }
+
+        const user = await User.findByPk(userId);
+        const skill = await Skill.findByPk(skillId);
+        if (!user || !skill) {
+            return next(new CustomError("Not Found", 404));
+        }
+
+        await user.addSkills(skill);
+        res.status(200).json({ message: "Skill added successfully" });
+    } catch (err) {
+        next(err);
+    }
+};
 
 /**
  * get user interests
@@ -100,7 +127,13 @@ exports.addUserSkill = async (req, res, next) => {};
 exports.getUserInterests = async (req, res, next) => {
     try {
         const userId = req.params.id;
+        if (!userId) {
+            return next(new CustomError("Bad Request", 400));
+        }
         const user = await User.findByPk(userId);
+        if (!user) {
+            return next(new CustomError("Not Found", 404));
+        }
         const interests = await user.getInterests();
         res.json(interests);
     } catch (err) {
@@ -112,13 +145,29 @@ exports.getUserInterests = async (req, res, next) => {
  * add user interests
  */
 exports.addUserInterest = async (req, res, next) => {
-    // const userId = req.auth.payload.sub;
-    // const skillId = req.body.skillId;
-    // const user = await User.findByPk(userId);
-    // await user.addInterest()
+    try {
+        const userId = req.auth.payload.sub;
+        const interestId = req.body.interest_id;
+        if (!interestId) {
+            return next(new CustomError("Bad Request", 400));
+        }
+
+        const user = await User.findByPk(userId);
+        const interest = await Interest.findByPk(interestId);
+        if (!user || !interest) {
+            return next(new CustomError("Not Found", 404));
+        }
+
+        await user.addInterest(interest);
+        res.status(200).json({ message: "Interest added successfully" });
+    } catch (err) {
+        next(err);
+    }
 };
 
 /**
  * search on users using query parameters
  */
-exports.searchUser = async (req, res, next) => {};
+exports.searchUser = (req, res, next) => {
+    //
+};
