@@ -10,7 +10,7 @@ const router = express.Router();
  */
 
 // create user account
-// requires Authenticatoin header to be set to access token
+// requires Authorization header to be set to access token
 router.put('/', validateAccessToken, userController.createUser);
 
 // get user profile info 
