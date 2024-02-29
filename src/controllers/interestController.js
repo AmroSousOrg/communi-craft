@@ -72,4 +72,3 @@ exports.updateInterest = async (req, res, next) => {
     }
 };
 
-// Add other methods if necessary, following the same pattern.
