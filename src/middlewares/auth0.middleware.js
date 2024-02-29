@@ -1,6 +1,7 @@
 /**
  *  oauth0 configuration file
  */
+
 const {
     auth,
     claimCheck,
