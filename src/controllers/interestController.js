@@ -122,51 +122,5 @@ exports.deleteInterest = async (req, res, next) => {
     }
 };
 
-/**
- * Update an existing interest by its ID.
- */
-exports.updateInterest = async (req, res, next) => {
-    try {
-        const interestId = req.params.id;
-        const { name, description } = req.body;
-        
-        // Check if at least one update field is provided
-        if (!name && !description) {
-            return next(new CustomError("Bad Request: No fields provided for update", 400));
-        }
-
-        const interest = await models.Interest.findByPk(interestId);
-
-        if (!interest) {
-            return next(new CustomError("Interest Not Found", 404));
-        }
-
-        // Update the interest with the new values (only provided fields will be updated)
-        if (name) interest.name = name;
-        if (description) interest.description = description;
-
-        await interest.save();
-        
-        res.json({
-            message: "Interest updated successfully.",
-            interest: interest
-        });
-    } catch (err) {
-        next(err);
-    }
-};
-
-/**
- * Get all interests.
- */
-exports.getAllInterests = async (req, res, next) => {
-    try {
-        const interests = await models.Interest.findAll();
-
-        res.json(interests);
-    } catch (err) {
-        next(err);
-    }
-};
 
 
