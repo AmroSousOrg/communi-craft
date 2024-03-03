@@ -3,6 +3,33 @@ const { Op } = require('sequelize');
 const CustomError = require("../util/customError");
 
 /**
+ * Add a new interest.
+ */
+exports.createInterest = async (req, res, next) => {
+    try {
+        const { name, description } = req.body;
+        if (!name) {
+            return next(new CustomError("Bad Request: Name is required", 400));
+        }
+
+        // Assuming that the description is not mandatory
+        // and an admin check is not required for this operation.
+        
+        const newInterest = await models.Interest.create({
+            name,
+            description: description || '' // If no description is provided, default to an empty string
+        });
+        
+        res.status(201).json({
+            message: "Interest created successfully.",
+            interest: newInterest
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * Retrieve an interest by its ID.
  */
 exports.getInterestById = async (req, res, next) => {
@@ -71,4 +98,29 @@ exports.updateInterest = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * Delete an interest by its ID.
+ */
+exports.deleteInterest = async (req, res, next) => {
+    try {
+        const interestId = req.params.id;
+        const interest = await models.Interest.findByPk(interestId);
+
+        if (!interest) {
+            return next(new CustomError("Interest Not Found", 404));
+        }
+
+        // Here you should also check if the user is authorized to delete the interest.
+        // This is typically done via middleware or within the controller if the logic is simple.
+
+        await interest.destroy();
+        
+        res.json({ message: "Interest deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
+};
+
+
 
