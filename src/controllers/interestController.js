@@ -7,8 +7,8 @@ const CustomError = require("../util/customError");
  */
 exports.createInterest = async (req, res, next) => {
     try {
-        const { name, description } = req.body;
-        if (!name) {
+        const { title, description } = req.body;
+        if (!title) {
             return next(new CustomError("Bad Request: Name is required", 400));
         }
 
@@ -16,7 +16,7 @@ exports.createInterest = async (req, res, next) => {
         // and an admin check is not required for this operation.
         
         const newInterest = await models.Interest.create({
-            name,
+            title,
             description: description || '' // If no description is provided, default to an empty string
         });
         
@@ -79,9 +79,9 @@ exports.searchInterests = async (req, res, next) => {
  */
 exports.updateInterest = async (req, res, next) => {
     try {
-        const { id, name, description } = req.body;
+        const { id, title, description } = req.body;
 
-        if (!id || !name || !description) {
+        if (!id || !title || !description) {
             return next(new CustomError("Bad Request: Missing fields", 400));
         }
 
@@ -91,7 +91,7 @@ exports.updateInterest = async (req, res, next) => {
         }
 
         // Assume admin check is done via middleware before this controller is called
-        await interest.update({ name, description });
+        await interest.update({ title, description });
 
         res.json({ message: "Interest updated successfully." });
     } catch (err) {
