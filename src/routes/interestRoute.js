@@ -19,5 +19,14 @@ router.get('/interests/search', interestController.searchInterests);
 
 router.put('/interests', validateAccessToken , interestController.updateInterest);
 
+router.delete('/interests/:id', validateAccessToken, interestController.deleteInterest);
+
+//  route for Update an existing interest by its ID.
+router.patch('/interests/:id', validateAccessToken, interestController.updateInterest);
+
+router.get('/interests', interestController.getAllInterests);
+
+
+
 
 module.exports = router; 

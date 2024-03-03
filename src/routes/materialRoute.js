@@ -9,6 +9,9 @@ const { validateAccessToken } = require('../middlewares/auth0.middleware');
  *      Router End-Points starts with
  *      /api/materials    
  */
+
+router.post('/materials', validateAccessToken, materialsController.addMaterial);
+
 router.get('/materials/:id', materialsController.getMaterialById);
 
 

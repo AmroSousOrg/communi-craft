@@ -99,3 +99,74 @@ exports.updateInterest = async (req, res, next) => {
     }
 };
 
+/**
+ * Delete an interest by its ID.
+ */
+exports.deleteInterest = async (req, res, next) => {
+    try {
+        const interestId = req.params.id;
+        const interest = await models.Interest.findByPk(interestId);
+
+        if (!interest) {
+            return next(new CustomError("Interest Not Found", 404));
+        }
+
+        // Here you should also check if the user is authorized to delete the interest.
+        // This is typically done via middleware or within the controller if the logic is simple.
+
+        await interest.destroy();
+        
+        res.json({ message: "Interest deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Update an existing interest by its ID.
+ */
+exports.updateInterest = async (req, res, next) => {
+    try {
+        const interestId = req.params.id;
+        const { name, description } = req.body;
+        
+        // Check if at least one update field is provided
+        if (!name && !description) {
+            return next(new CustomError("Bad Request: No fields provided for update", 400));
+        }
+
+        const interest = await models.Interest.findByPk(interestId);
+
+        if (!interest) {
+            return next(new CustomError("Interest Not Found", 404));
+        }
+
+        // Update the interest with the new values (only provided fields will be updated)
+        if (name) interest.name = name;
+        if (description) interest.description = description;
+
+        await interest.save();
+        
+        res.json({
+            message: "Interest updated successfully.",
+            interest: interest
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get all interests.
+ */
+exports.getAllInterests = async (req, res, next) => {
+    try {
+        const interests = await models.Interest.findAll();
+
+        res.json(interests);
+    } catch (err) {
+        next(err);
+    }
+};
+
+

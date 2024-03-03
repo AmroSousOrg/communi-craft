@@ -3,6 +3,30 @@ const { Op } = require('sequelize');
 const CustomError = require("../util/customError");
 
 /**
+ * Add a new material.
+ */
+exports.addMaterial = async (req, res, next) => {
+    try {
+        const { title, description } = req.body;
+        if (!title || !description) {
+            return next(new CustomError("Bad Request: Title and description are required", 400));
+        }
+
+        // Here we assume that there's no need for an admin check,
+        // but if there is, you should include your admin middleware.
+        
+        const newMaterial = await models.Material.create({ title, description });
+        
+        res.status(201).json({
+            message: "Material created successfully.",
+            material: newMaterial
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * Retrieve a material by its ID.
  */
 exports.getMaterialById = async (req, res, next) => {
