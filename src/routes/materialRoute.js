@@ -2,7 +2,7 @@ const { Router } = require('express');
 
 const router = Router();
 
-const materialsController = require('../controllers/materialsController');
+const materialsController = require('../controllers/materialController');
 const { validateAccessToken } = require('../middlewares/auth0.middleware');
 
 /**
