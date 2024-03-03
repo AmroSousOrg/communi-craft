@@ -18,5 +18,8 @@ router.get('/materials/search', materialsController.searchMaterials);
 router.put('/materials', validateAccessToken, materialsController.updateMaterial);
 
 
+router.delete('/materials/:id', validateAccessToken, materialsController.deleteMaterial);
+
+
 
 module.exports = router; 

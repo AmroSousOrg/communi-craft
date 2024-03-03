@@ -72,3 +72,27 @@ exports.updateMaterial = async (req, res, next) => {
     }
 };
 
+/**
+ * Delete a material by its ID.
+ */
+
+exports.deleteMaterial = async (req, res, next) => {
+    try {
+        const materialId = req.params.id;
+        const material = await models.Material.findByPk(materialId);
+
+        if (!material) {
+            return next(new CustomError("Material Not Found", 404));
+        }
+
+        // Here you would also check if the user is authorized to delete the material
+        // This is typically done via middleware or within the controller if the logic is simple
+
+        await material.destroy();
+        
+        res.json({ message: "Material deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
+};
+
