@@ -54,16 +54,21 @@ exports.getInterestById = async (req, res, next) => {
  * Search for interests based on query parameters.
  */
 exports.searchInterests = async (req, res, next) => {
+            console.log("ahmad atallah");
+
     try {
-        const { name } = req.query;
-        if (!name) {
+        const { title } = req.query;
+
+        //console.log("ahmad atallah");
+
+        if (!title) {
             return next(new CustomError("Bad Request: Missing search query parameters", 400));
         }
 
         const interests = await models.Interest.findAll({
             where: {
-                name: {
-                    [Op.iLike]: `%${name}%`
+                title: {
+                    [Op.iLike]: `%${title}%`
                 }
             }
         });
@@ -104,8 +109,8 @@ exports.updateInterest = async (req, res, next) => {
  */
 exports.deleteInterest = async (req, res, next) => {
     try {
-        const interestId = req.params.id;
-        const interest = await models.Interest.findByPk(interestId);
+        const interestIdi = req.params.id;
+        const interest = await models.Interest.findByPk(interestIdi);
 
         if (!interest) {
             return next(new CustomError("Interest Not Found", 404));
