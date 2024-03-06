@@ -24,5 +24,9 @@ router.put('/', validateAccessToken, materialsController.updateMaterial);
 router.delete('/:id', validateAccessToken, materialsController.deleteMaterial);
 
 
+router.get('/', validateAccessToken, materialsController.getAllMaterials);
+
+
+
 
 module.exports = router; 
