@@ -21,5 +21,7 @@ router.put('/', validateAccessToken, interestController.updateInterest);
 
 router.delete('/:id', validateAccessToken, interestController.deleteInterest);
 
+router.get('/', validateAccessToken, interestController.getAllInterests);
+
 
 module.exports = router; 

@@ -54,13 +54,8 @@ exports.getInterestById = async (req, res, next) => {
  * Search for interests based on query parameters.
  */
 exports.searchInterests = async (req, res, next) => {
-            console.log("ahmad atallah");
-
     try {
         const { title } = req.query;
-
-        //console.log("ahmad atallah");
-
         if (!title) {
             return next(new CustomError("Bad Request: Missing search query parameters", 400));
         }
@@ -122,6 +117,19 @@ exports.deleteInterest = async (req, res, next) => {
         await interest.destroy();
         
         res.json({ message: "Interest deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get all interests.
+ */
+exports.getAllInterests = async (req, res, next) => {
+    try {
+        const interests = await models.Interest.findAll();
+
+        res.json(interests);
     } catch (err) {
         next(err);
     }

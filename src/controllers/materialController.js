@@ -120,3 +120,14 @@ exports.deleteMaterial = async (req, res, next) => {
     }
 };
 
+/**
+ * Get all materials.
+ */
+exports.getAllMaterials = async (req, res, next) => {
+    try {
+        const materials = await models.Material.findAll();
+        res.json(materials);
+    } catch (err) {
+        next(err); 
+    }
+};
