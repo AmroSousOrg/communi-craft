@@ -55,15 +55,15 @@ exports.getInterestById = async (req, res, next) => {
  */
 exports.searchInterests = async (req, res, next) => {
     try {
-        const { name } = req.query;
-        if (!name) {
+        const { title } = req.query;
+        if (!title) {
             return next(new CustomError("Bad Request: Missing search query parameters", 400));
         }
 
         const interests = await models.Interest.findAll({
             where: {
-                name: {
-                    [Op.iLike]: `%${name}%`
+                title: {
+                    [Op.iLike]: `%${title}%`
                 }
             }
         });
@@ -104,8 +104,8 @@ exports.updateInterest = async (req, res, next) => {
  */
 exports.deleteInterest = async (req, res, next) => {
     try {
-        const interestId = req.params.id;
-        const interest = await models.Interest.findByPk(interestId);
+        const interestIdi = req.params.id;
+        const interest = await models.Interest.findByPk(interestIdi);
 
         if (!interest) {
             return next(new CustomError("Interest Not Found", 404));
@@ -117,6 +117,19 @@ exports.deleteInterest = async (req, res, next) => {
         await interest.destroy();
         
         res.json({ message: "Interest deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get all interests.
+ */
+exports.getAllInterests = async (req, res, next) => {
+    try {
+        const interests = await models.Interest.findAll();
+
+        res.json(interests);
     } catch (err) {
         next(err);
     }

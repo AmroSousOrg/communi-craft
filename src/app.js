@@ -18,6 +18,10 @@ const corsConfig = require("./config/cors");
 const helmetConfig = require("./config/helmet");
 const { errorHandler } = require("./middlewares/error.middleware");
 const notFoundHandler = require("./middlewares/not-found.middleware");
+const {
+    validateAccessToken,
+    checkValidAccount,
+} = require("./middlewares/auth0.middleware");
 // routers
 const routers = require("./routes");
 
@@ -43,7 +47,9 @@ app.use(helmet(helmetConfig));
 app.use(morgan("combined"));
 
 // routers configuration
-app.use("/api", routers);
+// protected by auth middlwares
+// requires user have account (except createUser)
+app.use("/api", [validateAccessToken, checkValidAccount], routers);
 
 // error handlers
 app.use(errorHandler);
@@ -56,7 +62,7 @@ app.use(notFoundHandler);
         // syncing sequelize connection and models associations
         // with Database. use force: true in development
         // when you need to force changes to database tables and relations.
-        await sequelize.sync(/*{ force: true }*/);
+        await sequelize.sync({ force: true });
 
         const port = process.env.PORT || 8080;
         app.listen(port); // server start listening on port {port}

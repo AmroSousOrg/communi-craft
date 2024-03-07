@@ -29,6 +29,19 @@ To install the project on your machine
   npm start
 ```
 
+you need to make .env file for database and auth configuration
+
+```bash
+# .env
+
+DB_HOST=localhost
+DB_USER=aswp_team
+DB_PASS=password12345
+DB_NAME=communi_db
+
+PORT=8080
+```
+
 - to run reac-auth-sample for authentication tokens run
 ```bash
   npm run auth
@@ -84,8 +97,8 @@ other developers before merge with dev branch.
 
 ## Authors
 
-- [@Amro Sous](https://github.com/AmroSous)
 - [@Adam Akram](https://github.com/Adamakram02)
 - [@Ahmad Atallah](https://github.com/Ahmadatalla)
-- [@Ibrahim Qadi](https://github.com/IbraheemQadi)
+- [@Amro Sous](https://github.com/AmroSous)
+- [@Ibraheem Qadi](https://github.com/IbraheemQadi)
 

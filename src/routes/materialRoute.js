@@ -10,18 +10,22 @@ const { validateAccessToken } = require('../middlewares/auth0.middleware');
  *      /api/materials    
  */
 
-router.post('/materials', validateAccessToken, materialsController.addMaterial);
+router.post('/', validateAccessToken, materialsController.addMaterial);
 
-router.get('/materials/:id', materialsController.getMaterialById);
-
-
-router.get('/materials/search', materialsController.searchMaterials);
+router.get('/:id', materialsController.getMaterialById);
 
 
-router.put('/materials', validateAccessToken, materialsController.updateMaterial);
+router.get('/search', materialsController.searchMaterials);
 
 
-router.delete('/materials/:id', validateAccessToken, materialsController.deleteMaterial);
+router.put('/', validateAccessToken, materialsController.updateMaterial);
+
+
+router.delete('/:id', validateAccessToken, materialsController.deleteMaterial);
+
+
+router.get('/', validateAccessToken, materialsController.getAllMaterials);
+
 
 
 

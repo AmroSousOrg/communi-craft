@@ -64,7 +64,7 @@ export const ExternalApiComponent = () => {
       //   },
       // });
 
-      const responseData = `Bearer ${token}`;
+      const responseData = token;
 
       setState({
         ...state,
