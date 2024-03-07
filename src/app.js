@@ -18,6 +18,10 @@ const corsConfig = require("./config/cors");
 const helmetConfig = require("./config/helmet");
 const { errorHandler } = require("./middlewares/error.middleware");
 const notFoundHandler = require("./middlewares/not-found.middleware");
+const {
+    validateAccessToken,
+    checkValidAccount,
+} = require("./middlewares/auth0.middleware");
 // routers
 const routers = require("./routes");
 
@@ -43,7 +47,9 @@ app.use(helmet(helmetConfig));
 app.use(morgan("combined"));
 
 // routers configuration
-app.use("/api", routers);
+// protected by auth middlwares
+// requires user have account (except createUser)
+app.use("/api", [validateAccessToken, checkValidAccount], routers);
 
 // error handlers
 app.use(errorHandler);

@@ -8,7 +8,8 @@ const UserProject = sequelize.define(
         role: {
             type: Sequelize.ENUM, 
             values: ['Admin', 'Collaborator'], 
-            allowNull: false
+            allowNull: false,
+            defaultValue: 'Collaborator'
         }
     }
 );
