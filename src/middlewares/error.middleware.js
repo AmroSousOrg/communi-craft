@@ -29,6 +29,7 @@ const errorHandler = (err, req, res, next) => {
     } else {
         message = "Internal Server Error";
         status = 500;
+        console.log(err.stack);
         logger.error(err.stack);
     }
     
