@@ -8,6 +8,11 @@ const Invitation = sequelize.define("Invitation", {
         type: Sequelize.ENUM,
         values: ['PENDING', 'REJECTED', 'ACCEPTED'],
         defaultValue: 'PENDING'
+    },
+    type: {
+        type: Sequelize.ENUM,
+        values: ['SENT', 'RECEIVED'],
+        allowNull: false,
     }
 });
 
