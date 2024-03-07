@@ -14,7 +14,7 @@ const resourceController=require('../controllers/resourceController');
 router.get('/all',resourceController.getAllResources);
 router.get('/search', resourceController.searchResources);
 router.get('/:id',resourceController.getResourcesById);
-router.put('/:id',validateAccessToken,resourceController.updatebyid);
+router.put('/:id',validateAccessToken,resourceController.updateById);
 router.delete('/:id',validateAccessToken,resourceController.deleteById);
 router.post('/',validateAccessToken,resourceController.newResources);     
 

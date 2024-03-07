@@ -1,7 +1,12 @@
 const models = require("../models");
 const { Op } = require('sequelize');
+const CustomError = require("../util/customError");
 
-const newResources=(req,res)=>{
+const handleNotFoundError=(entity,next) => {
+    return next(new CustomError(`${entity} Not Found`,404));
+};
+
+const newResources=(req,res,next)=>{
     const {name,description,price,quantity} = req.body;
     const owner=req.auth.payload.sub;
 
@@ -15,64 +20,48 @@ const newResources=(req,res)=>{
 
     models.User.findByPk(owner).then(owner=>{
         if(!owner){
-            return res.status(404).json({
-                message: "Owner not found",
-                success:0
-            })
+            return handleNotFoundError('User',next);
         }
         return models.Resource.create(resources).then(result=>{
                 return res.status(201).json({
-                    message: "success",
-                    success:1
+                    message: "Created Successfully",
                 })
             }).catch(error=>{
-                return res.status(500).json({
-                    message: "invaled input",
-                    success:0
-                })
+                next(error);
             });
         
     }).catch(error=>{
-        return res.status(500).json({
-            message: "invaled input",
-            success:0
-        })
+        next(error);
     })
 }
-const getResourcesById = (req, res) => {
+
+const getResourcesById = (req, res,next) => {
     const id = req.params.id;
     models.Resource.findByPk(id)
         .then(result => {
             if(!result){
-                return res.status(400).json({
-                    message: "Not Found"
-                });
+                return handleNotFoundError('Resource',next);
             }
             return res.status(200).json({
-                result,
+                result
             });
         })
         .catch(error => {
-            return res.status(500).json({
-                message: "Something Wrong",
-                error:error
-            });
+           next(error);
         });
 }
 
-const getAllResources = (req, res) => {
+const getAllResources = (req, res,next) => {
     models.Resource.findAll()
         .then(result => {
             res.status(200).json(result);
         })
         .catch(error => {
-            res.status(500).json({
-                message: "Something Wrong"
-            });
+            next(error);
         });
 }
 
-const updatebyid=(req,res)=>{
+const updateById=(req,res,next)=>{
     const resourceId=req.params.id;
     const userId=req.auth.payload.sub;
     const {name,description,price,quantity}=req.body;
@@ -87,58 +76,57 @@ const updatebyid=(req,res)=>{
     models.User.findByPk(userId)
         .then(user=>{
             if (!user) {
-                return res.status(404).json({message:"User not found"});
+                return handleNotFoundError('User',next);
             }
             return models.Resource.findOne({where:{id:resourceId}});
         })
         .then(resource=>{
             if (!resource) {
-                return res.status(404).json({message:"Resource not found"});
+                return handleNotFoundError('Resource',next);
             }
             if (resource.owner!== userId) {
-                return res.status(403).json({message:"You are not authorized to update this resource" });
+                return next(new CustomError("You are not authorized to update this resource", 403));
             }
             return resource.update(updateResource);
         })
         .then(()=>{
-            return res.status(200).json({message:"Resource updated successfully"});
+            return res.status(200).json({message:"Resource Updated successfully"});
         })
         .catch(error => {
-            console.error(error);
-            return res.status(500).json({message:"Something went wrong"});
+            next(error);
         });
 };
 
 
-const deleteById=(req,res)=>{
+const deleteById=(req,res,next)=>{
     const resourceId = req.params.id;
     const userId = req.auth.payload.sub;
     models.User.findByPk(userId)
         .then(user=>{
             if (!user) {
-                return res.status(404).json({message:"User not found"});
+                return handleNotFoundError('User',next);
             }
             return models.Resource.findOne({where:{id:resourceId}});
         })
         .then(resource=>{
             if (!resource){
-                return res.status(404).json({message:"Resource not found"});
+                return handleNotFoundError('Resource',next);
             }
             if (resource.owner!==userId) {
-                return res.status(403).json({message:"You are not authorized to delete this resource"});
+                return next(new CustomError("You are not authorized to update this resource", 403));
             }
 
             return resource.destroy();
         })
         .then(()=>{
-            return res.status(200).json({message:"Resource deleted successfully"});
+            return res.status(200).json({message:"Resource Deleted Successfully"});
         })
         .catch(error => {
-            console.error(error);
-            return res.status(500).json({message:"Something went wrong"});
+            next(error);
         });
 }
-const searchResources = async (req, res) => {
+
+const searchResources = async (req,res,next) => {
     try {
         const searchname = (req.query.name.length)?req.query.name:"null";
         const searchdescription = (req.query.description.length)?req.query.description:"null";
@@ -151,19 +139,17 @@ const searchResources = async (req, res) => {
             }
         });
 
-        if(!result.length)return res.status(200).json({message:"Not results found"})
+        return(!result.length)?handleNotFoundError('Resource',next):res.status(200).json(result);
 
-        return res.status(200).json(result);
-    } catch (e) {
-        console.error("Error occurred:", e);
-        return res.status(500).json({ message:"An error occurred" });
+    } catch (error) {
+        next(error);
     }
 }
 
 module.exports = {
     getAllResources,
     getResourcesById,
-    updatebyid,
+    updateById,
     newResources,
     deleteById,
     searchResources
