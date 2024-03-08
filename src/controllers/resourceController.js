@@ -1,13 +1,15 @@
 const models = require("../models");
 const { Op } = require('sequelize');
 const CustomError = require("../util/customError");
+const { error } = require("winston");
 
 const handleNotFoundError=(entity,next) => {
     return next(new CustomError(`${entity} Not Found`,404));
 };
 
 const newResources=(req,res,next)=>{
-    const {name,description,price,quantity} = req.body;
+
+    const {name,description,price,quantity}=req.body;
     const owner=req.auth.payload.sub;
 
     const resources={
@@ -52,9 +54,13 @@ const getResourcesById = (req, res,next) => {
 }
 
 const getAllResources = (req, res,next) => {
+    const limet=req.query.limit;
+    const page=req.query.page;
+
     models.Resource.findAll()
         .then(result => {
-            res.status(200).json(result);
+            result=result.slice(((page-1)*limet),(page*limet));
+            return ((result.length))?res.status(200).json({page:page,datasize:result.length,result:result}):res.status(200).json({page:page, result:"No Data"});
         })
         .catch(error => {
             next(error);
@@ -65,7 +71,7 @@ const updateById=(req,res,next)=>{
     const resourceId=req.params.id;
     const userId=req.auth.payload.sub;
     const {name,description,price,quantity}=req.body;
-
+    
     const updateResource={
         name:name,
         description:description,
@@ -97,10 +103,43 @@ const updateById=(req,res,next)=>{
         });
 };
 
+const buyResources=(req,res,next)=>{
+
+    const resourceId=req.params.id;
+    const userId=req.auth.payload.sub;
+
+    models.User.findByPk(userId).then(user=>{
+
+        if(!user)return handleNotFoundError("User",next);
+
+        return models.Resource.findOne({where:{id:resourceId}});
+
+    }).then(resource=>{
+
+        if(!resource)return handleNotFoundError("Resource",next);
+
+        if(resource.owner===userId){
+            return next(new CustomError("You are owner you cant buy your resources", 403));
+        }
+
+        if(resource.quantity===0)return next(new CustomError("This resource is no available",400));
+
+        const quantity=(resource.quantity-1);
+        return resource.update({quantity:quantity});
+    }).then(()=>{
+        return res.status(200).json({message:"Resource Buyed Successfully"});
+    }).catch(error=>{
+        return next(error);
+    })
+
+
+}
 
 const deleteById=(req,res,next)=>{
+
     const resourceId = req.params.id;
     const userId = req.auth.payload.sub;
+
     models.User.findByPk(userId)
         .then(user=>{
             if (!user) {
@@ -112,6 +151,7 @@ const deleteById=(req,res,next)=>{
             if (!resource){
                 return handleNotFoundError('Resource',next);
             }
+
             if (resource.owner!==userId) {
                 return next(new CustomError("You are not authorized to update this resource", 403));
             }
@@ -147,7 +187,7 @@ const searchResources=async(req, res, next)=>{
         }
 
         if(minPrice!=-1&&maxPrice!=-1){
-            searchWhere.price={[Op.between]:[minPrice,maxPrice]}
+            searchWhere.price={[Op.between]:[minPrice,maxPrice]};
         }else {
             if(minPrice!=-1){
                 searchWhere.price={[Op.gte]:minPrice};
@@ -179,5 +219,6 @@ module.exports = {
     updateById,
     newResources,
     deleteById,
-    searchResources
+    searchResources,
+    buyResources
 };

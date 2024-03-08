@@ -11,10 +11,11 @@ const resourceController=require('../controllers/resourceController');
  *      Router End-Points starts with
  *      /api/resources     
  */
-router.get('/all',resourceController.getAllResources);
+router.get('/',resourceController.getAllResources);
 router.get('/search', resourceController.searchResources);
 router.get('/:id',resourceController.getResourcesById);
 router.put('/:id',validateAccessToken,resourceController.updateById);
+router.put('/:id/buy',resourceController.buyResources);
 router.delete('/:id',validateAccessToken,resourceController.deleteById);
 router.post('/',validateAccessToken,resourceController.newResources);     
 
