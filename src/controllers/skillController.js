@@ -1,5 +1,6 @@
 const models=require('../models');
 const {Op}=require('sequelize');
+
 const getSkillsById=(req,res)=>{
     const id=req.params.id;
     models.Skill.findByPk(id).then(result=>{

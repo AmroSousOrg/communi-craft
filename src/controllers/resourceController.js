@@ -126,25 +126,52 @@ const deleteById=(req,res,next)=>{
         });
 }
 
-const searchResources = async (req,res,next) => {
+const searchResources=async(req, res, next)=>{
     try {
-        const searchname = (req.query.name.length)?req.query.name:"null";
-        const searchdescription = (req.query.description.length)?req.query.description:"null";
-        const result = await models.Resource.findAll({
-            where:{
-                [Op.or]:[
-                    {name:{[Op.like]:'%'+searchname.toLowerCase()+'%'}},
-                    {description:{[Op.like]:'%'+searchdescription.toLowerCase()+'%'}}
-                ]
+        
+        const {name,description,min_price,max_price,min_qty}=req.query;
+
+        const searchname=(name&&name.length)?name:null;
+        const searchdescription=(description&&description.length)?description:null;
+        const minPrice=(min_price&&min_price.length)?min_price:-1;
+        const maxPrice=(max_price&&max_price.length)?max_price:-1;
+        const minQty=(min_qty&&min_qty.length)?min_qty:-1;
+        const searchWhere={};
+
+        if(searchname){
+            searchWhere.name={[Op.like]:'%'+searchname.toLowerCase()+'%'};
+        }
+        
+        if(searchdescription){
+            searchWhere.description={[Op.like]:'%'+searchdescription.toLowerCase()+'%'};
+        }
+
+        if(minPrice!=-1&&maxPrice!=-1){
+            searchWhere.price={[Op.between]:[minPrice,maxPrice]}
+        }else {
+            if(minPrice!=-1){
+                searchWhere.price={[Op.gte]:minPrice};
             }
+            if(maxPrice!=-1){
+                searchWhere.price={[Op.lte]:maxPrice};
+            }
+        }
+        
+        if(minQty!=-1){
+            searchWhere.quantity={[Op.gte]:minQty}
+        }
+
+        const result=await models.Resource.findAll({
+            where:searchWhere
         });
 
         return(!result.length)?handleNotFoundError('Resource',next):res.status(200).json(result);
 
-    } catch (error) {
+    }catch(error){
         next(error);
     }
 }
+
 
 module.exports = {
     getAllResources,
