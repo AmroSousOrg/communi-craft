@@ -2,6 +2,7 @@ const Sequelize = require("sequelize");
 
 const sequelize = require('../util/database'); 
 
+
 const Project = sequelize.define(
     'Project',
     {
