@@ -1,38 +1,41 @@
 const express = require("express");
 const userController = require("../controllers/userController");
-const { validateAccessToken } = require("../middlewares/auth0.middleware");
 
 const router = express.Router();
 
 // {Base URL} = /api/users/
 
 /**
- * USER account
- */
-router.put("/", validateAccessToken, userController.createUser);
-router.get("/:id/userInfo", userController.getUserInfo);
-
-/**
  * GET
- */
-router.get("/:id/projects", userController.getUserProjects);
-router.get("/:id/skills", userController.getUserSkills);
-router.get("/:id/interests", userController.getUserInterests);
-// router.get("/:id/resources", userController.getUserResources);
+*/
+router.get("/:name/userInfo", userController.getUserInfo);
+router.get("/:name/projects", userController.getUserProjects);
+router.get("/:name/skills", userController.getUserSkills);
+router.get("/:name/interests", userController.getUserInterests);
+router.get("/:name/resources", userController.getUserResources);
+router.get("/:name/invitations/sent", userController.getUserInvitationsSent);
+router.get("/:name/invitations/received", userController.getUserInvitationsReceived);
+router.get("/search", userController.searchUser);
 
 /**
- * PUT, POST
- */
-router.post("/skills", validateAccessToken, userController.addUserSkill);
-router.post("/interests", validateAccessToken, userController.addUserInterest);
+ * PUT
+*/
+router.put("/", userController.createUser);
+router.put("/:name/invitations/sent", userController.sendInvitation);
+
+/**
+ * POST
+*/
+router.post("/:name/skills", userController.addUserSkill);
+router.post("/:name/interests", userController.addUserInterest);
+router.post("/:name/invitations/:id", userController.respondeInvitation);
+router.post("/:name/userinfo", userController.updateUserProfile);
 
 /**
  * DELETE
  */
-
-/**
- * SEARCH
- */
-router.get("/search", userController.searchUser);
+router.delete("/:name/skills", userController.deleteUserSkills);
+router.delete("/:name/interests", userController.deleteUserInterests);
+router.delete("/:name/invitations/sent/:inv_id", userController.deleteSentInvitation);
 
 module.exports = router;

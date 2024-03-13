@@ -11,6 +11,10 @@ const Card = require("./card");
 // define associations
 Project.belongsToMany(User, { through: UserProject });
 User.belongsToMany(Project, { through: UserProject });
+User.hasMany(UserProject);
+UserProject.belongsTo(User);
+Project.hasMany(UserProject);
+UserProject.belongsTo(Project);
 
 Card.belongsTo(User, { foreignKey: 'user' });
 Card.belongsTo(Project, { foreignKey: 'project' });
