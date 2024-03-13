@@ -5,107 +5,207 @@ const {
     Project,
     Resource,
     Invitation,
+    UserProject,
 } = require("../models");
+
+const { param, check, validationResult } = require("express-validator");
+
 const fetchUserInfo = require("../util/fetchUserInfo");
+
 const CustomError = require("../util/customError");
+
+const { Op } = require("sequelize");
+
+const PAGE_SIZE = 20;
 
 /**
  * function to get user profile information
  * from database by id
  */
-exports.getUserInfo = async (req, res, next) => {
-    try {
-        const userId = req.params.id;
-        if (!userId) {
-            return next(new CustomError("Bad Request", 400));
+exports.getUserInfo = [
+    param("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user } = await getUserData(req);
+            res.json(user);
+        } catch (err) {
+            next(err);
         }
-        const user = await User.findByPk(userId);
-        if (!user) {
-            return next(new CustomError("Not Found", 404));
-        }
-        res.json(user);
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * get user projects
- * use page size = 20
+ * use pagination
  */
-exports.getUserProjects = async (req, res, next) => {
-    try {
-        if (!req.params.id) {
-            return next(new CustomError("Bad Request", 400));
+exports.getUserProjects = [
+    param("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user, offset } = await getUserData(req);
+
+            const isUserAuth = req.auth.payload.sub === user.id;
+
+            const { count, rows: projects } = await UserProject.findAndCountAll(
+                {
+                    where: {
+                        UserId: user.id,
+                    },
+                    limit: PAGE_SIZE,
+                    offset: offset,
+                    include: [
+                        {
+                            model: Project,
+                            where: {
+                                [Op.or]: [
+                                    { isPublic: true },
+                                    ...(isUserAuth
+                                        ? [{ isPublic: false }]
+                                        : []),
+                                ],
+                            },
+                        },
+                    ],
+                }
+            );
+
+            res.json({
+                totalCount: count,
+                returnedCount: projects.length,
+                projects: projects,
+            }); // Adjust based on your needs
+        } catch (err) {
+            next(err);
         }
-
-        const user = await User.findByPk(req.params.id);
-
-        if (!user) {
-            return next(new CustomError("Not Found", 404));
-        }
-
-        const projects = await user.getProjects();
-
-        res.json(projects);
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * get user skills
- * use page size = 20
+ * use pagination
  */
-exports.getUserSkills = async (req, res, next) => {
-    try {
-        const userId = req.params.id;
-        if (!userId) {
-            return next(new CustomError("Bad Request", 400));
+exports.getUserSkills = [
+    param("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user, offset } = await getUserData(req);
+
+            const { count, rows: skills } = await Skill.findAndCountAll({
+                limit: PAGE_SIZE,
+                offset: offset,
+                attributes: ["id", "title", "description"],
+                include: [
+                    {
+                        model: User,
+                        where: { id: user.id },
+                        attributes: [],
+                    },
+                ],
+            });
+
+            res.json({
+                totalCount: count,
+                returnedCount: skills.length,
+                skills: skills,
+            });
+        } catch (err) {
+            next(err);
         }
-        const user = await User.findByPk(userId);
-        if (!user) {
-            return next(new CustomError("Not Found", 404));
-        }
-        const skills = await user.getSkills();
-        res.json(skills);
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * get user interests
- * use page size = 20
+ * use pagination
  */
-exports.getUserInterests = async (req, res, next) => {
-    try {
-        const userId = req.params.id;
-        if (!userId) {
-            return next(new CustomError("Bad Request", 400));
+exports.getUserInterests = [
+    param("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user, offset } = await getUserData(req);
+
+            const { count, rows: interests } = await Interest.findAndCountAll({
+                limit: PAGE_SIZE,
+                offset: offset,
+                attributes: ["id", "title", "description"],
+                include: [
+                    {
+                        model: User,
+                        where: { id: user.id },
+                        attributes: [],
+                    },
+                ],
+            });
+
+            res.json({
+                totalCount: count,
+                returnedCount: interests.length,
+                Interests: interests,
+            });
+        } catch (err) {
+            next(err);
         }
-        const user = await User.findByPk(userId);
-        if (!user) {
-            return next(new CustomError("Not Found", 404));
-        }
-        const interests = await user.getInterests();
-        res.json(interests);
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * get all user resources
- * use pagination with page size = 20
+ * use pagination
  */
-exports.getUserResources = async (req, res, next) => {};
+exports.getUserResources = [
+    param("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user, offset } = await getUserData(req);
+
+            const { count, rows: resources } = await Resource.findAndCountAll({
+                limit: PAGE_SIZE,
+                offset: offset,
+                include: [
+                    {
+                        model: User,
+                        where: { id: user.id },
+                        attributes: [],
+                    },
+                ],
+            });
+
+            res.json({
+                totalCount: count,
+                returnedCount: resources.length,
+                resources: resources,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
+
+/**
+ * get user outgoing invitations sent
+ * use pagination
+ */
+exports.getUserInvitationsSent = async (req, res, next) => {
+    getUserInvitations(req, res, next, "RECEIVED");
+};
 
 /**
  * get user coming invitations
- * use pagination with page size = 20
+ * use pagination
  */
-exports.getUserInvitations = async (req, res, next) => {};
+exports.getUserInvitationsReceived = async (req, res, next) => {
+    getUserInvitations(req, res, next, "SENT");
+};
 
 /**
  * search on users using query parameters
@@ -113,12 +213,68 @@ exports.getUserInvitations = async (req, res, next) => {};
  * Query Params:
  * - skills : skills sub-names
  * - interests : interests sub-names
- * - min_skl : minimum required skills
- * - min_itst : minimum required interests
  * - subname : substring of user name
  */
-exports.searchUser = (req, res, next) => {
-    //
+exports.searchUser = async (req, res, next) => {
+    try {
+        const { skills, interests, subname } = req.query;
+        const offset = getOffset(req);
+
+        // Build query conditions based on query parameters
+        const conditions = {};
+
+        // Substring match in username (case-insensitive)
+        if (subname) {
+            conditions.name = { [Op.like]: `%${subname}%` };
+        }
+
+        // Include Skill and Interest associations if skills and interests are specified
+        const include = [];
+        if (skills) {
+            const skillConditions = skills.split(",").map((skill) => ({
+                title: { [Op.like]: `%${skill}%` },
+            }));
+            include.push({
+                model: Skill,
+                where: {
+                    [Op.or]: skillConditions, // Match any skill condition
+                },
+                through: {
+                    attributes: [],
+                },
+            });
+        }
+        if (interests) {
+            const interestConditions = interests.split(",").map((interest) => ({
+                title: { [Op.like]: `%${interest}%` },
+            }));
+            include.push({
+                model: Interest,
+                where: {
+                    [Op.or]: interestConditions, // Match any skill condition
+                },
+                through: {
+                    attributes: [],
+                },
+            });
+        }
+
+        // Execute the search query with associations included
+        const users = await User.findAll({
+            where: conditions,
+            include: include,
+            offset: offset,
+            limit: PAGE_SIZE,
+        });
+
+        // Return the search results
+        res.json({
+            returnedCount: users.length,
+            users: users,
+        });
+    } catch (error) {
+        next(error);
+    }
 };
 
 /**
@@ -149,11 +305,47 @@ exports.createUser = async (req, res, next) => {
         await User.create(user);
 
         // return response
-        res.status(201).json({ message: "Created successfully." });
+        res.status(201).json({
+            message: "Created successfully.",
+            user: user,
+        });
     } catch (err) {
         next(err);
     }
 };
+
+/**
+ *  user send invitation to join a project.
+ *  Body:
+ *      - project_id: Integer
+ *  use WebSockets
+ */
+exports.sendInvitation = [
+    param("name").exists().isString(),
+    check("project_id").exists().toInt().isInt(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const project_id = req.body.project_id;
+            await check_username_auth(req);
+
+            const invit = {
+                type: "RECEIVED",
+                receiverId: req.auth.payload.sub,
+                projectId: project_id,
+            };
+
+            const isExist = await Invitation.findOne({ where: invit });
+
+            if (!isExist) await Invitation.create(invit);
+
+            res.json({ message: "Invitation sent." });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 /**
  * add user skills
@@ -161,26 +353,24 @@ exports.createUser = async (req, res, next) => {
  * Body:
  * - skill_id: Integer[]
  */
-exports.addUserSkill = async (req, res, next) => {
-    try {
-        const userId = req.auth.payload.sub;
-        const skillId = req.body.skill_id;
-        if (!skillId) {
-            return next(new CustomError("Bad Request", 400));
-        }
+exports.addUserSkill = [
+    check("skill_id").exists().isArray(),
+    check("skill_id.*").toInt().isInt(),
+    param("name").exists().isString(),
 
-        const user = await User.findByPk(userId);
-        const skill = await Skill.findByPk(skillId);
-        if (!user || !skill) {
-            return next(new CustomError("Not Found", 404));
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const skill_id = req.body.skill_id;
+            const { user } = await check_username_auth(req);
+            const skills = await Skill.findAll({ where: { id: skill_id } });
+            await user.addSkills(skills);
+            res.status(200).json({ message: "skills added successfully" });
+        } catch (err) {
+            next(err);
         }
-
-        await user.addSkills(skill);
-        res.status(200).json({ message: "Skill added successfully" });
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * add user interests
@@ -188,26 +378,24 @@ exports.addUserSkill = async (req, res, next) => {
  * Body:
  * - interest_id: Integer[]
  */
-exports.addUserInterest = async (req, res, next) => {
-    try {
-        const userId = req.auth.payload.sub;
-        const interestId = req.body.interest_id;
-        if (!interestId) {
-            return next(new CustomError("Bad Request", 400));
-        }
+exports.addUserInterest = [
+    check("interest_id").exists().isArray(),
+    check("interest_id.*").toInt().isInt(),
+    param("name").exists().isString(),
 
-        const user = await User.findByPk(userId);
-        const interest = await Interest.findByPk(interestId);
-        if (!user || !interest) {
-            return next(new CustomError("Not Found", 404));
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const interest_id = req.body.interest_id;
+            const { user } = await check_username_auth(req);
+            const interests = await Interest.findAll({ where: { id: interest_id } });
+            await user.addInterests(interests);
+            res.status(200).json({ message: "interests added successfully" });
+        } catch (err) {
+            next(err);
         }
-
-        await user.addInterest(interest);
-        res.status(200).json({ message: "Interest added successfully" });
-    } catch (err) {
-        next(err);
-    }
-};
+    },
+];
 
 /**
  * responde to invitation sent to this user.
@@ -242,3 +430,108 @@ exports.deleteUserSkills = async (req, res, next) => {};
  * - interest_id: Integer[]
  */
 exports.deleteUserInterests = async (req, res, next) => {};
+
+/**
+ * delete sent invitation request by this user to join a project
+ */
+exports.deleteSentInvitation = async (req, res, next) => {};
+
+//=============================================== Utilities =========================================
+
+/**
+ * utitlity method to check if name in request is
+ * for authenticated user.
+ */
+const check_username_auth = async (req) => {
+    const username = req.params.name;
+
+    const isAuthenticated = await User.findOne({
+        where: {
+            id: req.auth.payload.sub,
+            name: username,
+        },
+    });
+
+    if (!isAuthenticated) {
+        throw new CustomError("Not authorized", 401);
+    }
+
+    return { user: isAuthenticated };
+};
+
+/**
+ * utility to calculate offset from page query param
+ */
+const getOffset = (req) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const offset = (page - 1) * PAGE_SIZE;
+    return offset;
+};
+
+/**
+ * utility method to get user data and offset pagination from
+ * the request, this method extracted from several methods to make
+ * better code reusablility.
+ */
+const getUserData = async (req) => {
+    const offset = getOffset(req);
+    const username = req.params.name;
+
+    const user = await User.findOne({ where: { name: username } });
+    if (!user) {
+        throw new CustomError("Not Found", 404);
+    }
+
+    return { user, offset };
+};
+
+/**
+ * utility method to get user invitations according to type
+ * SENT/RECEIVED
+ */
+const getUserInvitations = [
+    param("name").exists().isString(),
+
+    async (req, res, next, type) => {
+        try {
+            const { user, offset } = await getUserData(req, next);
+
+            const { count, rows: invitations } =
+                await Invitation.findAndCountAll({
+                    limit: PAGE_SIZE,
+                    offset: offset,
+                    where: {
+                        type: type,
+                        status: "PENDING",
+                    },
+                    include: [
+                        {
+                            model: User,
+                            as: "receiver",
+                            where: { id: user.id },
+                            attributes: [],
+                        },
+                    ],
+                });
+
+            res.json({
+                totalCount: count,
+                returnedCount: invitations.length,
+                invitations: invitations,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
+
+/**
+ * util function to check if any parameters are not set
+ * then it thows Bad Request error
+ */
+const check_bad_request = (req) => {
+    const error = validationResult(req);
+    if (!error.isEmpty()) {
+        throw new CustomError("Bad Request", 400);
+    }
+};

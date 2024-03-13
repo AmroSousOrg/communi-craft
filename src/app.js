@@ -62,7 +62,7 @@ app.use(notFoundHandler);
         // syncing sequelize connection and models associations
         // with Database. use force: true in development
         // when you need to force changes to database tables and relations.
-        await sequelize.sync({ force: true });
+        await sequelize.sync(/*{ force: true }*/);
 
         const port = process.env.PORT || 8080;
         app.listen(port); // server start listening on port {port}
