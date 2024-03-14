@@ -224,6 +224,11 @@ exports.createProject = [
         try {
             check_bad_request(req);
 
+            
+
+
+
+
             // your code here
         } catch (err) {
             next(err);
@@ -298,7 +303,20 @@ exports.updateProject = [
         try {
             check_bad_request(req);
 
-            // your code here
+            const projectId = req.params.id;
+            const updateData = req.body;
+
+            const project = await models.Project.findByPk(projectId);
+            if (!project) {
+                return res.status(404).json({ message: "Project not found" });
+            }
+            await project.update(updateData);
+
+            res.json({
+                message: "Project updated successfully",
+               // project
+            });
+            
         } catch (err) {
             next(err);
         }
