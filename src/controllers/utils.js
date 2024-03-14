@@ -8,6 +8,7 @@
  */
 const { validationResult } = require("express-validator");
 const { UserProject } = require("../models");
+const CustomError = require('../util/customError');
 
 /**
  *
@@ -67,7 +68,7 @@ exports.is_project_admin = async (req, project) => {
         },
         attributes: ["role"],
     });
-    if (!role || role !== "Admin") {
+    if (!role || role.dataValues.role !== "Admin") {
         throw new CustomError("Unothorized operation", 401);
     }
 };
