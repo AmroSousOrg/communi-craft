@@ -223,13 +223,20 @@ exports.createProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            
-
-
-
-
-            // your code here
+            const { title, description, isPublic, level, status, location } = req.body;
+            const user = await models.User.findByPk(req.auth.payload.sub);
+            const project = await user.addProject({
+                title,
+                description,
+                isPublic,
+                level,
+                status,
+                location
+            });
+            res.status(201).json({
+                message: "Project created successfully",
+                project
+            });
         } catch (err) {
             next(err);
         }
@@ -307,9 +314,7 @@ exports.updateProject = [
             const updateData = req.body;
 
             const project = await models.Project.findByPk(projectId);
-            if (!project) {
-                return res.status(404).json({ message: "Project not found" });
-            }
+            is_project_admin(req, project);
             await project.update(updateData);
 
             res.json({
@@ -585,7 +590,14 @@ exports.deleteProject = [
         try {
             check_bad_request(req);
 
-            // your code here
+         const projectId = req.params.id;
+        const project = await models.Project.findByPk(projectId);
+        is_project_admin(req, project);
+         await project.destroy();
+
+        res.status(200).json({
+            message: "Project deleted successfully"
+        });
         } catch (err) {
             next(err);
         }
