@@ -42,9 +42,25 @@ exports.getProjectTeam = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const offset = getOffset(req);
+            //const offset = getOffset(req);
+            const projectId = req.params.id;
+            const teamMembers = await models.UserProject.findAll({
+            where: { projectId: projectId },
+            include: [{
+                model: models.User,
+                attributes: ['id', 'name', 'email'], 
+            }]
+        });
 
-            // your code here
+        if (!teamMembers) {
+            return res.status(404).json({ message: "No team members found for this project" });
+        }s
+        const membersData = teamMembers.map(association => association.User);
+
+        res.json({
+            projectId: projectId,
+            teamMembers: membersData
+        });
         } catch (err) {
             next(err);
         }
@@ -193,6 +209,7 @@ exports.searchProject = [
     async (req, res, next) => {
         try {
             const offset = getOffset(req);
+            
 
             // your code here
         } catch (err) {
@@ -455,8 +472,8 @@ exports.updateMemberRole = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            // your code here
+          
+          // your code here
         } catch (err) {
             next(err);
         }
@@ -535,8 +552,22 @@ exports.deleteTeamMember = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            // your code here
+             const projectId = req.params.id;
+             const { name } = req.body;
+         const user = await models.User.findOne({
+            where: { name }
+        });
+         const userProject = await models.UserProject.findOne({
+            where: {
+                projectId: projectId,
+                userId: user.id
+            }
+        });
+        if (!userProject) {
+            return res.status(404).json({ message: "Team member not associated with this project" });
+        }
+        await userProject.destroy();
+        res.status(200).json({ message: "Team member deleted successfully" });
         } catch (err) {
             next(err);
         }

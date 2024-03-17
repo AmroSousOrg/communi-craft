@@ -49,7 +49,7 @@ router.delete(
     "/:id/invitations/sent/:inv_id",
     projectController.deleteInvitation
 );
-router.delete("/:id/cards/:card_id", projectController.deleteCard);
+router.delete("/:id/cards/:card_id", projectController.deleteCard);         
 router.delete("/:id", projectController.deleteProject);                            
 
 module.exports = router;
