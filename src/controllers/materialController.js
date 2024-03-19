@@ -11,10 +11,6 @@ exports.addMaterial = async (req, res, next) => {
         if (!title || !description) {
             return next(new CustomError("Bad Request: Title and description are required", 400));
         }
-
-        // Here we assume that there's no need for an admin check,
-        // but if there is, you should include your admin middleware.
-        
         const newMaterial = await models.Material.create({ title, description });
         
         res.status(201).json({
@@ -56,7 +52,6 @@ exports.searchMaterials = async (req, res, next) => {
         if (!title) {
             return next(new CustomError("Bad Request: Missing search query parameters", 400));
         }
-
         const materials = await models.Material.findAll({
             where: {
                 title: {
@@ -86,8 +81,6 @@ exports.updateMaterial = async (req, res, next) => {
         if (!material) {
             return next(new CustomError("Material Not Found", 404));
         }
-
-        // Assume admin check is done via middleware before this controller is called
         await material.update({ title, description });
 
         res.json({ message: "Material updated successfully." });
@@ -108,10 +101,6 @@ exports.deleteMaterial = async (req, res, next) => {
         if (!material) {
             return next(new CustomError("Material Not Found", 404));
         }
-
-        // Here you would also check if the user is authorized to delete the material
-        // This is typically done via middleware or within the controller if the logic is simple
-
         await material.destroy();
         
         res.json({ message: "Material deleted successfully." });
