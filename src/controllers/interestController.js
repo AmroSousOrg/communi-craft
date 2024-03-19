@@ -11,13 +11,9 @@ exports.createInterest = async (req, res, next) => {
         if (!title) {
             return next(new CustomError("Bad Request: Name is required", 400));
         }
-
-        // Assuming that the description is not mandatory
-        // and an admin check is not required for this operation.
-        
         const newInterest = await models.Interest.create({
             title,
-            description: description || '' // If no description is provided, default to an empty string
+            description: description || '' 
         });
         
         res.status(201).json({
@@ -89,8 +85,6 @@ exports.updateInterest = async (req, res, next) => {
         if (!interest) {
             return next(new CustomError("Interest Not Found", 404));
         }
-
-        // Assume admin check is done via middleware before this controller is called
         await interest.update({ title, description });
 
         res.json({ message: "Interest updated successfully." });
@@ -110,10 +104,6 @@ exports.deleteInterest = async (req, res, next) => {
         if (!interest) {
             return next(new CustomError("Interest Not Found", 404));
         }
-
-        // Here you should also check if the user is authorized to delete the interest.
-        // This is typically done via middleware or within the controller if the logic is simple.
-
         await interest.destroy();
         
         res.json({ message: "Interest deleted successfully." });
