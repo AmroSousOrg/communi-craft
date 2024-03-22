@@ -190,9 +190,17 @@ exports.getProjectCards = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const offset = getOffset(req);
+            // const offset = getOffset(req);
+            const projectId=req.params.id;
+            const cards=await models.Card.findAll({where:{project:projectId}});
 
-            // your code here
+            if(!(cards.length)){
+                throw new CustomError("List is Empty",404);
+            }
+            res.status(200).json({
+                message:"successfully",
+                result:cards
+            });
         } catch (err) {
             next(err);
         }
@@ -209,8 +217,17 @@ exports.getCardById = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            // your code here
+            const cardId=req.params.card_id;
+            const projectId=req.params.id;
+            const card= await models.Card.findOne({where:{project:projectId,id:cardId}});
+            if(!card){
+                throw new CustomError("Card not found",404);
+            }
+            res.status(200).json({
+                message:"successfully",
+                result:card
+            })
+            
         } catch (err) {
             next(err);
         }
@@ -346,12 +363,38 @@ exports.addNewCard = [
     check("project").exists().toInt().isInt(),
     check("due_date").optional().isDate(),
 
-    async (req, res, next) => {
-        try {
-            check_bad_request(req);
+    async(req,res,next)=>{
+        try{
+            // check_bad_request(req);
+            const {id} = req.params;
+            const {subject,details,username,due_date}=req.body;
 
-            // your code here
-        } catch (err) {
+            const user=await models.User.findByPk(username);
+
+            if(!user){
+                throw new CustomError("User not found",404);
+            }
+            const project=await models.Project.findByPk(id);
+            if(!project){
+                throw new CustomError("Project not found",404);
+            }
+            const cardInfo={
+                subject:subject,
+                details:details,
+                user:username,
+                project:id,
+                due_date:due_date,
+            };
+
+            models.Card.create(cardInfo).then(card=>{
+                res.status(200).json({
+                    message:"Created Successfully",
+                    result:card
+                })
+            }).catch(error=>{
+                next(error);
+            });
+        }catch(err){
             next(err);
         }
     },
@@ -435,7 +478,7 @@ exports.addMaterialsToProject = [
             const { id } = req.params; // Project ID from URL
             const { material_id } = req.body; // Array of Material IDs from the request body
             const project = await models.Project.findByPk(id);
-             is_project_admin(req, project);
+            is_project_admin(req, project);
             await project.addMaterials(material_id);
             res.status(200).json({
                 message: "Materials added to the project successfully.",
@@ -482,15 +525,35 @@ exports.updateCard = [
     param("card_id").exists().toInt().isInt(),
     check("subject").optional().isString(),
     check("details").optional().isString(),
-    check("username").optional().isString(),
+    check("user").optional().isString(),
     check("project").optional().toInt().isInt(),
     check("due_date").optional().isDate(),
 
     async (req, res, next) => {
         try {
             check_bad_request(req);
+            const {id,card_id} = req.params;
+            const { subject,details,user,project,due_date,}=req.body;
+            const users=await models.User.findByPk(user);
 
-            // your code here
+            if(!users){
+                throw new CustomError("User not found",404);
+            }
+            const updateCard={
+                subject:subject,
+                details:details,
+                user:user ,
+                project:project,
+                due_date:due_date,
+            }; 
+            const project_ = await models.Project.findByPk(id);
+            (is_project_admin(req, project_))
+            const card = await models.Card.findOne({where:{id:card_id,project:id}});
+            if (!card){
+                return res.status(404).json({error:"Card not found"});
+            }
+            await card.update(updateCard);
+            res.status(200).json({message:"Card updated successfully"});
         } catch (err) {
             next(err);
         }
@@ -565,7 +628,7 @@ exports.deleteMaterialsFromProject = [
             const { material_id } = req.body; // Array of Material IDs from the request body
 
             const project = await models.Project.findByPk(id);
-           is_project_admin(req, project);
+            is_project_admin(req, project);
             await project.removeMaterials(material_id);
 
             res.status(200).json({
@@ -632,16 +695,28 @@ exports.deleteInvitation = [
 /**
  * delete project card by card ID
  */
-exports.deleteCard = [
+exports.deleteCard=[
     param("id").exists().toInt().isInt(),
     param("card_id").exists().toInt().isInt(),
 
-    async (req, res, next) => {
+    async(req, res,next)=>{
         try {
             check_bad_request(req);
+            const cardId = req.params.card_id;
+            const projectid=req.params.id;
+            const card = await models.Card.findByPk(cardId);
+            if (!card) {
+                throw new CustomError("Card not found",404);
+            }
+            const project=await models.Project.findByPk(projectid);
+            if(!project){
+                throw new CustomError("Project not found",404);
+            }
+            is_project_admin(req,project);
+            await card.destroy();
 
-            // your code here
-        } catch (err) {
+            res.status(200).json({message:"Card deleted successfully"});
+        }catch(err){
             next(err);
         }
     },
@@ -658,10 +733,10 @@ exports.deleteProject = [
         try {
             check_bad_request(req);
 
-         const projectId = req.params.id;
+        const projectId = req.params.id;
         const project = await models.Project.findByPk(projectId);
         is_project_admin(req, project);
-         await project.destroy();
+        await project.destroy();
 
         res.status(200).json({
             message: "Project deleted successfully"
