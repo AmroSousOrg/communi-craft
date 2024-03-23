@@ -5,28 +5,29 @@ const router = Router();
 const materialsController = require('../controllers/materialController');
 const { validateAccessToken } = require('../middlewares/auth0.middleware');
 
+
 /**
- *      Router End-Points starts with
- *      /api/materials    
+ * GET
  */
-
-router.post('/', validateAccessToken, materialsController.addMaterial);
-
-router.get('/:id', materialsController.getMaterialById);
-
-
 router.get('/search', materialsController.searchMaterials);
-
-
-router.put('/', validateAccessToken, materialsController.updateMaterial);
-
-
-router.delete('/:id', validateAccessToken, materialsController.deleteMaterial);
-
-
+router.get('/:id', materialsController.getMaterialById);
 router.get('/', validateAccessToken, materialsController.getAllMaterials);
 
+/**
+ * PUT
+ */
+router.put('/', validateAccessToken, materialsController.addMaterial);
 
+
+/**
+ * POST
+ */
+router.post('/', validateAccessToken, materialsController.updateMaterial);
+
+/**
+ * DELETE
+ */
+router.delete('/:id', validateAccessToken, materialsController.deleteMaterial);
 
 
 module.exports = router; 
