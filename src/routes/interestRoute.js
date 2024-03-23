@@ -7,21 +7,26 @@ const interestController = require('../controllers/interestController');
 const { validateAccessToken } = require('../middlewares/auth0.middleware');
 
 /**
- *      Router End-Points starts with
- *      /api/interests
+ * GET
  */
-
-router.post('/', validateAccessToken, interestController.createInterest);
-
-router.get('/:id', interestController.getInterestById);
-
 router.get('/search', interestController.searchInterests);
+router.get('/:id', interestController.getInterestById);
+router.get('/', interestController.getAllInterests);
 
-router.put('/', validateAccessToken, interestController.updateInterest);
+/**
+ * PUT
+ */
+router.put('/', interestController.createInterest);
 
-router.delete('/:id', validateAccessToken, interestController.deleteInterest);
+/**
+ * POST
+ */
+router.post('/', interestController.updateInterest);
 
-router.get('/', validateAccessToken, interestController.getAllInterests);
+/**
+ * DELETE
+ */
+router.delete('/:id', interestController.deleteInterest);
 
 
 module.exports = router; 
