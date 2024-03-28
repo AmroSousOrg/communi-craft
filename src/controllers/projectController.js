@@ -292,30 +292,29 @@ exports.createProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            const userId = req.user?.id;
             const { title, description, isPublic, level, status, location } = req.body;
+            const userId = req.auth.payload.sub;
+    if (!userId) {
+      return res.status(403).json({ message: "User must be authenticated to create a project." });
+    }
+    const project = await models.Project.create({
+        title,
+        description,
+        isPublic,
+        level,
+        status,
+        location,
+      });
 
-            // Creating the project
-            const project = await models.Project.create({
-                title,
-                description,
-                isPublic,
-                level,
-                status,
-                location,
-                
-            });
-            await models.userProjects.create({
-                UserId: userId, 
-                ProjectId: project.id,
-                role: 'Admin' 
-            });
-
-            return res.status(201).json({
-                message: "Project created successfully and you are set as the admin.",
-                project
-            });
+      await models.UserProject.create({
+        ProjectId: project.id,
+        UserId: userId,
+        role: 'Admin',
+      });
+      res.status(201).json({
+        message: "Project created successfully and user set as admin.",
+        project,
+      });
 
         } catch (err) {
             next(err);
@@ -571,9 +570,33 @@ exports.updateMemberRole = [
 
     async (req, res, next) => {
         try {
-            check_bad_request(req);
-          
-          // your code here
+        check_bad_request(req);
+        const { id, username } = req.params;
+        const { role } = req.body;
+        const project = await models.Project.findByPk(id);
+        is_project_admin(req, project);
+
+        const user = await models.User.findOne({ where: { name: username } });
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            const projectUserAssociation = await models.UserProject.findOne({
+                where: {
+                    ProjectId: id,
+                    UserId: user.id
+                }
+            });
+
+            if (!projectUserAssociation) {
+                return res.status(404).json({ message: "Project member not found" });
+            }
+            projectUserAssociation.role = role;
+            await projectUserAssociation.save();
+
+            res.status(200).json({
+                message: "Project member role updated successfully",
+                projectUser: projectUserAssociation
+            });
         } catch (err) {
             next(err);
         }
