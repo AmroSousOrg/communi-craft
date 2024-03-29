@@ -8,7 +8,9 @@ const {
     UserProject,
 } = require("../models");
 
-const { param, check, validationResult } = require("express-validator");
+const { param, check, query } = require("express-validator");
+
+const { check_bad_request, is_exist, getOffset } = require("./utils");
 
 const fetchUserInfo = require("../util/fetchUserInfo");
 
@@ -388,7 +390,9 @@ exports.addUserInterest = [
             check_bad_request(req);
             const interest_id = req.body.interest_id;
             const { user } = await check_username_auth(req);
-            const interests = await Interest.findAll({ where: { id: interest_id } });
+            const interests = await Interest.findAll({
+                where: { id: interest_id },
+            });
             await user.addInterests(interests);
             res.status(200).json({ message: "interests added successfully" });
         } catch (err) {
@@ -405,15 +409,97 @@ exports.addUserInterest = [
  *
  * use WebSocket to send notification to project admins
  */
-exports.respondeInvitation = async (req, res, next) => {};
+exports.respondeInvitation = [
+    param("name").exists().isString(),
+    param("id").exists().toInt().isInt(),
+    check("status").exists().isString().isIn(["ACCEPTED", "REJECTED"]),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+
+            const { name, id } = req.params;
+            const { status } = req.body;
+
+            // check existance and authorization
+            const inv = await Invitation.findOne({
+                where: {
+                    projectId: id,
+                    status: "PENDING",
+                    type: "SENT",
+                },
+                include: {
+                    model: User,
+                    as: "receiver",
+                    where: {
+                        name,
+                        id: req.auth.payload.sub,
+                    },
+                },
+            });
+            is_exist(inv);
+
+            // update invitation table
+            await Invitation.update({ status }, { where: { id: inv.id } });
+
+            if (status === "ACCEPTED") {
+                // update userproject role
+                const user = await User.findByPk(req.auth.payload.sub);
+                const project = await Project.findByPk(id);
+                await user.addProject(project);
+            }
+
+            // response
+            res.json({
+                message:
+                    "user invitaion to project was " +
+                    status +
+                    " successfully.",
+                user: name,
+                project: id,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 /**
- * update user profile
+ * update user profile /:name/userinfo
  *
  * Body:
  * - name: String (unique)
  */
-exports.updateUserProfile = async (req, res, next) => {};
+exports.updateUserProfile = [
+    param("name").exists().isString(),
+    check("name").exists().isString(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { name: oldName } = req.params;
+            const { name: newName } = req.body;
+
+            const { user } = await check_username_auth(req);
+
+            const isNotUnique = await User.findOne({
+                where: { name: newName },
+            });
+            if (isNotUnique)
+                throw new CustomError("Name is already exist.", 409);
+
+            // update name
+            await User.update({ name: newName }, { where: { id: user.id } });
+
+            res.json({
+                message: "User profile updated successfully.",
+                data: { name: newName },
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 /**
  * delete skills from this user.
@@ -421,7 +507,26 @@ exports.updateUserProfile = async (req, res, next) => {};
  * Body:
  * - skill_id: Integer[]
  */
-exports.deleteUserSkills = async (req, res, next) => {};
+exports.deleteUserSkills = [
+    param("name").exists().isString(),
+    check("skill_id").exists().isArray(),
+    check("skill_id.*").toInt().isInt(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user } = await check_username_auth(req);
+            const { skill_id } = req.body;
+            await user.removeSkills(skill_id);
+            res.json({
+                message: "Skills removed successfully.",
+                skills: skill_id,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 /**
  * delete interests from this user
@@ -429,12 +534,60 @@ exports.deleteUserSkills = async (req, res, next) => {};
  * Body:
  * - interest_id: Integer[]
  */
-exports.deleteUserInterests = async (req, res, next) => {};
+exports.deleteUserInterests = [
+    param("name").exists().isString(),
+    check("interest_id").exists().isArray(),
+    check("interest_id.*").toInt().isInt(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user } = await check_username_auth(req);
+            const { interest_id } = req.body;
+            await user.removeInterests(interest_id);
+            res.json({
+                message: "Interests removed successfully.",
+                interests: interest_id,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 /**
  * delete sent invitation request by this user to join a project
  */
-exports.deleteSentInvitation = async (req, res, next) => {};
+exports.deleteSentInvitation = [
+    param("name").exists().isString(),
+    param("project_id").exists().toInt().isInt(),
+
+    async (req, res, next) => {
+        try {
+            check_bad_request(req);
+            const { user } = await check_username_auth(req);
+            const projectId = parseInt(req.params.project_id);
+
+            const invitation = await Invitation.findOne({
+                where: {
+                    projectId: projectId,
+                    receiverId: user.id, 
+                    type: "RECEIVED",
+                    status: "PENDING",
+                },
+            });
+
+            is_exist(invitation);
+
+            await invitation.destroy();
+            res.json({
+                message: `Join request to project ${projectId} was deleted successfully.`,
+            });
+        } catch (err) {
+            next(err);
+        }
+    },
+];
 
 //=============================================== Utilities =========================================
 
@@ -460,15 +613,6 @@ const check_username_auth = async (req) => {
 };
 
 /**
- * utility to calculate offset from page query param
- */
-const getOffset = (req) => {
-    const page = parseInt(req.query.page, 10) || 1;
-    const offset = (page - 1) * PAGE_SIZE;
-    return offset;
-};
-
-/**
  * utility method to get user data and offset pagination from
  * the request, this method extracted from several methods to make
  * better code reusablility.
@@ -484,6 +628,8 @@ const getUserData = async (req) => {
 
     return { user, offset };
 };
+
+//--------------------------------===========================--------------------------===================
 
 /**
  * utility method to get user invitations according to type
@@ -524,14 +670,3 @@ const getUserInvitations = [
         }
     },
 ];
-
-/**
- * util function to check if any parameters are not set
- * then it thows Bad Request error
- */
-const check_bad_request = (req) => {
-    const error = validationResult(req);
-    if (!error.isEmpty()) {
-        throw new CustomError("Bad Request", 400);
-    }
-};
