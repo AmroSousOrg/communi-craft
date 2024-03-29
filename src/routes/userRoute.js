@@ -36,6 +36,6 @@ router.post("/:name/userinfo", userController.updateUserProfile);
  */
 router.delete("/:name/skills", userController.deleteUserSkills);
 router.delete("/:name/interests", userController.deleteUserInterests);
-router.delete("/:name/invitations/sent/:inv_id", userController.deleteSentInvitation);
+router.delete("/:name/invitations/sent/:project_id", userController.deleteSentInvitation);
 
 module.exports = router;
