@@ -1,6 +1,9 @@
 const models = require("../models");
 const { Op } = require('sequelize');
 const CustomError = require("../util/customError");
+const handleNotFoundError=(entity,next) => {
+    return next(new CustomError(`${entity} Not Found`,404));
+};
 
 /**
  * Add a new interest.
@@ -51,20 +54,26 @@ exports.getInterestById = async (req, res, next) => {
  */
 exports.searchInterests = async (req, res, next) => {
     try {
-        const { title } = req.query;
-        if (!title) {
-            return next(new CustomError("Bad Request: Missing search query parameters", 400));
-        }
+        const {title,description}=req.query;
+        const searchtitle=(title&&title.length)?title:null;
+        const searchdescription=(description&&description.length)?description:null;
 
-        const interests = await models.Interest.findAll({
-            where: {
-                title: {
-                    [Op.iLike]: `%${title}%`
-                }
-            }
+        const searchWhere={};
+
+        if(searchtitle){
+            searchWhere.title={[Op.like]:'%'+searchtitle.toLowerCase()+'%'};
+        }
+        
+        if(searchdescription){
+            searchWhere.description={[Op.like]:'%'+searchdescription.toLowerCase()+'%'};
+        }
+        const result=await models.Interest.findAll({
+            where:searchWhere
         });
 
-        res.json(interests);
+        if(!result.length)return handleNotFoundError("interest",next)
+
+        return res.status(200).json(result);
     } catch (err) {
         next(err);
     }

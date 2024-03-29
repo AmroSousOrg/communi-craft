@@ -46,4 +46,5 @@ module.exports = {
     Interest,
     Invitation,
     User,
+    Card,
 };
