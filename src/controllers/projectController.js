@@ -555,8 +555,26 @@ exports.respondToInvitation = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
+            const { id, inv_id } = req.params;
+            const { status } = req.body;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const invitation = await models.Invitation.findOne({
+                where: { id: inv_id, projectId: id, type: 'RECEIVED' },
+            });
+            is_exist(invitation);
+            if (status === "Accepted") {
+                await models.UserProject.create({
+                    ProjectId: id,
+                    UserId: invitation.userId,
+                    role: 'Collaborator',
+                });
+            }
+            await invitation.destroy();
+            res.status(200).json({
+                message: "Invitation responded successfully",
+            });
 
-            // your code here
         } catch (err) {
             next(err);
         }
@@ -761,8 +779,17 @@ exports.deleteInvitation = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            // your code here
+            const { id, inv_id } = req.params;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const invitation = await models.Invitation.findOne({
+                where: { id: inv_id, projectId: id, type: 'SENT' },
+            });
+            is_exist(invitation);
+            await invitation.destroy();
+            res.status(200).json({
+                message: "Invitation deleted successfully",
+            });
         } catch (err) {
             next(err);
         }
