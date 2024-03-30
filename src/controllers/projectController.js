@@ -375,7 +375,23 @@ exports.sendInvitation = [
         try {
             check_bad_request(req);
 
-            // your code here
+            const { id } = req.params;
+            const { username } = req.body;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const user = await models.User.findOne({ where: { name: username } });
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            const invitation = await models.Invitation.create({
+                projectId: id,
+                userId: user.id,
+                type: 'SENT',
+            });
+            res.status(201).json({
+                message: "Invitation sent successfully",
+                invitation,
+            });
         } catch (err) {
             next(err);
         }
