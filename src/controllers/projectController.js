@@ -153,8 +153,27 @@ exports.getSentInvitations = [
         try {
             check_bad_request(req);
             const offset = getOffset(req);
+            const { id } = req.params;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const invitations = await models.Invitation.findAll({
+            where: { projectId: id, type: 'SENT'},
+            offset: offset,
+            limit: PAGE_SIZE,
+            include: [{
+                model:models.Invitation,
+                as: 'Invitations',
+                attributes: ['id', 'status', 'type'],
+            }]
+        });
+        if (!invitations.length) {
+            return res.status(404).json({ message: "No invitations found for this project" });
+        }
+        res.json({
+            projectId: id,
+            invitations: invitations
+        });
 
-            // your code here
         } catch (err) {
             next(err);
         }
