@@ -9,6 +9,9 @@
 const { validationResult } = require("express-validator");
 const { UserProject } = require("../models");
 const CustomError = require('../util/customError');
+const PAGE_SIZE = 20; 
+
+exports.PAGE_SIZE = PAGE_SIZE;     // exporting page-size to controllers
 
 /**
  *

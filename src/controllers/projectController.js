@@ -7,8 +7,8 @@ const {
     getOffset,
     is_exist,
     is_project_admin,
+    PAGE_SIZE,
 } = require("./utils");
-const PAGE_SIZE = 20;
 
 /**
  * get project info by project id
@@ -48,22 +48,28 @@ exports.getProjectTeam = [
             is_exist(project);
             const projectId = req.params.id;
             const teamMembers = await models.UserProject.findAll({
-            where: { projectId: projectId },
-            include: [{
-                model: models.User,
-                attributes: ['id', 'name', 'email'], 
-            }]
-        });
-          
-        if (!teamMembers.length) {
-            return res.status(404).json({ message: "No team members found for this project" });
-        }
-        const membersData = teamMembers.map(association => association.User);
+                where: { projectId: projectId },
+                include: [
+                    {
+                        model: models.User,
+                        attributes: ["id", "name", "email"],
+                    },
+                ],
+            });
 
-        res.json({
-            projectId: projectId,
-            teamMembers: membersData
-        });
+            if (!teamMembers.length) {
+                return res.status(404).json({
+                    message: "No team members found for this project",
+                });
+            }
+            const membersData = teamMembers.map(
+                (association) => association.User
+            );
+
+            res.json({
+                projectId: projectId,
+                teamMembers: membersData,
+            });
         } catch (err) {
             next(err);
         }
@@ -80,26 +86,30 @@ exports.getProjectMaterials = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-          //  const offset = getOffset(req);
-          const { id } = req.params;
-          const project = await models.Project.findByPk(id);
-          is_exist(project);
-          const projectId = req.params.id;
-          const materials = await models.Project.findOne({
-            where: { id: projectId },
-            include: [{
-                model: models.Material,
-                as: 'Materials', 
-                through: { attributes: [] } 
-            }]
-        });
-        if (!materials.Materials.length) {
-            return res.status(404).json({ message: " No materials associated with this project" });
-        }
-        res.json({
-            projectId: projectId,
-            materials: materials.Materials 
-        });
+            //  const offset = getOffset(req);
+            const { id } = req.params;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const projectId = req.params.id;
+            const materials = await models.Project.findOne({
+                where: { id: projectId },
+                include: [
+                    {
+                        model: models.Material,
+                        as: "Materials",
+                        through: { attributes: [] },
+                    },
+                ],
+            });
+            if (!materials.Materials.length) {
+                return res.status(404).json({
+                    message: " No materials associated with this project",
+                });
+            }
+            res.json({
+                projectId: projectId,
+                materials: materials.Materials,
+            });
         } catch (err) {
             next(err);
         }
@@ -116,26 +126,30 @@ exports.getProjectSkills = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-         // const offset = getOffset(req);
-          const { id } = req.params;
-          const project = await models.Project.findByPk(id);
-          is_exist(project);
-           const projectId = req.params.id;
-           const projectWithSkills = await models.Project.findOne({
-            where: { id: projectId },
-            include: [{
-                model: models.Skill,
-                as: 'Skills',
-                through: { attributes: [] } 
-            }]
-        });
-        if (!projectWithSkills.length) {
-            return res.status(404).json({ message: " No skills associated with this project" });
-        }
-        res.json({
-            projectId: projectId,
-            skills: projectWithSkills.Skills 
-        });
+            // const offset = getOffset(req);
+            const { id } = req.params;
+            const project = await models.Project.findByPk(id);
+            is_exist(project);
+            const projectId = req.params.id;
+            const projectWithSkills = await models.Project.findOne({
+                where: { id: projectId },
+                include: [
+                    {
+                        model: models.Skill,
+                        as: "Skills",
+                        through: { attributes: [] },
+                    },
+                ],
+            });
+            if (!projectWithSkills.length) {
+                return res.status(404).json({
+                    message: " No skills associated with this project",
+                });
+            }
+            res.json({
+                projectId: projectId,
+                skills: projectWithSkills.Skills,
+            });
         } catch (err) {
             next(err);
         }
@@ -146,39 +160,57 @@ exports.getProjectSkills = [
  * get sent invitation to users
  * use pagination
  */
-exports.getSentInvitations = [
-    param("id").exists().toInt().isInt(),
-
-    async (req, res, next) => {
-        try {
-            check_bad_request(req);
-            const offset = getOffset(req);
-
-            // your code here
-        } catch (err) {
-            next(err);
-        }
-    },
-];
+exports.getSentInvitations = getProjectInvitations("SENT");
 
 /**
  * get received invitation requests from users
  * use pagination
  */
-exports.getReceivedInvitations = [
-    param("id").exists().toInt().isInt(),
+exports.getReceivedInvitations = getProjectInvitations("RECEIVED");
 
-    async (req, res, next) => {
-        try {
-            check_bad_request(req);
-            const offset = getOffset(req);
+/**
+ * Utility function that refactoring code for get invitaions controllers. 
+ * 
+ * @param {string} type - {SENT / RECEIVED}
+ * @returns array of middlewares. 
+ */
+function getProjectInvitations(type) {
+    return [
+        param("id").exists().toInt().isInt(),
 
-            // your code here
-        } catch (err) {
-            next(err);
-        }
-    },
-];
+        async (req, res, next) => {
+            try {
+                check_bad_request(req);
+                const offset = getOffset(req);
+                const { id: proj_id } = req.params;
+                const project = await models.Project.findByPk(proj_id);
+                await is_project_admin(req, project);
+                const { count, rows: invitations } =
+                    await models.Invitation.findAndCountAll({
+                        limit: PAGE_SIZE,
+                        offset: offset,
+                        where: {
+                            type: type,
+                            status: "PENDING",
+                            projectId: project.id,
+                        },
+                        include: {
+                            model: models.User,
+                            as: "receiver",
+                            attributes: ["id", "name", "email"],
+                        },
+                    });
+                res.json({
+                    totalCount: count,
+                    returnedCount: invitations.length,
+                    invitations: invitations,
+                });
+            } catch (err) {
+                next(err);
+            }
+        },
+    ];
+};
 
 /**
  * get all project cards
@@ -191,15 +223,17 @@ exports.getProjectCards = [
         try {
             check_bad_request(req);
             // const offset = getOffset(req);
-            const projectId=req.params.id;
-            const cards=await models.Card.findAll({where:{project:projectId}});
+            const projectId = req.params.id;
+            const cards = await models.Card.findAll({
+                where: { project: projectId },
+            });
 
-            if(!(cards.length)){
-                throw new CustomError("List is Empty",404);
+            if (!cards.length) {
+                throw new CustomError("List is Empty", 404);
             }
             res.status(200).json({
-                message:"successfully",
-                result:cards
+                message: "successfully",
+                result: cards,
             });
         } catch (err) {
             next(err);
@@ -217,17 +251,18 @@ exports.getCardById = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const cardId=req.params.card_id;
-            const projectId=req.params.id;
-            const card= await models.Card.findOne({where:{project:projectId,id:cardId}});
-            if(!card){
-                throw new CustomError("Card not found",404);
+            const cardId = req.params.card_id;
+            const projectId = req.params.id;
+            const card = await models.Card.findOne({
+                where: { project: projectId, id: cardId },
+            });
+            if (!card) {
+                throw new CustomError("Card not found", 404);
             }
             res.status(200).json({
-                message:"successfully",
-                result:card
-            })
-            
+                message: "successfully",
+                result: card,
+            });
         } catch (err) {
             next(err);
         }
@@ -292,30 +327,32 @@ exports.createProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const { title, description, isPublic, level, status, location } = req.body;
+            const { title, description, isPublic, level, status, location } =
+                req.body;
             const userId = req.auth.payload.sub;
-    if (!userId) {
-      return res.status(403).json({ message: "User must be authenticated to create a project." });
-    }
-    const project = await models.Project.create({
-        title,
-        description,
-        isPublic,
-        level,
-        status,
-        location,
-      });
+            if (!userId) {
+                return res.status(403).json({
+                    message: "User must be authenticated to create a project.",
+                });
+            }
+            const project = await models.Project.create({
+                title,
+                description,
+                isPublic,
+                level,
+                status,
+                location,
+            });
 
-      await models.UserProject.create({
-        ProjectId: project.id,
-        UserId: userId,
-        role: 'Admin',
-      });
-      res.status(201).json({
-        message: "Project created successfully and user set as admin.",
-        project,
-      });
-
+            await models.UserProject.create({
+                ProjectId: project.id,
+                UserId: userId,
+                role: "Admin",
+            });
+            res.status(201).json({
+                message: "Project created successfully and user set as admin.",
+                project,
+            });
         } catch (err) {
             next(err);
         }
@@ -336,8 +373,43 @@ exports.sendInvitation = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
+            const { id } = req.params;
+            const { username } = req.body;
+            const project = await models.Project.findByPk(id);
+            const user = await models.User.findOne({ where: { name: username }});
+            is_exist(user);
+            await is_project_admin(req, project);
 
-            // your code here
+            // check if user is in the team
+            const isMember = await models.UserProject.findOne({
+                where: {
+                    userId: user.id, 
+                    projectId: project.id
+                }
+            });
+            if (isMember) return next(new CustomError("This user is already a member in project team.", 400));
+
+            // check if invitaion was send previously and is PENDING 
+            const isSent = await models.Invitation.findOne({
+                where: {
+                    projectId: project.id, 
+                    receiverId: user.id,
+                    status: "PENDING"
+                }
+            });
+            if (isSent) {
+                if (isSent.type === "SENT") return next(new CustomError("An invitation is already sent to user.", 400));
+                else return next(new CustomError("An invitation is already received from the user to join this project", 400));
+            }
+
+            // send invitaion
+            await models.Invitation.create({
+                projectId: project.id,
+                receiverId: user.id,
+                type: "SENT",
+            });
+            res.json({ message: `Invitation to ${username} sent successfully.` });
+            
         } catch (err) {
             next(err);
         }
@@ -362,38 +434,40 @@ exports.addNewCard = [
     check("project").exists().toInt().isInt(),
     check("due_date").optional().isDate(),
 
-    async(req,res,next)=>{
-        try{
+    async (req, res, next) => {
+        try {
             // check_bad_request(req);
-            const {id} = req.params;
-            const {subject,details,username,due_date}=req.body;
+            const { id } = req.params;
+            const { subject, details, username, due_date } = req.body;
 
-            const user=await models.User.findByPk(username);
+            const user = await models.User.findByPk(username);
 
-            if(!user){
-                throw new CustomError("User not found",404);
+            if (!user) {
+                throw new CustomError("User not found", 404);
             }
-            const project=await models.Project.findByPk(id);
-            if(!project){
-                throw new CustomError("Project not found",404);
+            const project = await models.Project.findByPk(id);
+            if (!project) {
+                throw new CustomError("Project not found", 404);
             }
-            const cardInfo={
-                subject:subject,
-                details:details,
-                user:username,
-                project:id,
-                due_date:due_date,
+            const cardInfo = {
+                subject: subject,
+                details: details,
+                user: username,
+                project: id,
+                due_date: due_date,
             };
 
-            models.Card.create(cardInfo).then(card=>{
-                res.status(200).json({
-                    message:"Created Successfully",
-                    result:card
+            models.Card.create(cardInfo)
+                .then((card) => {
+                    res.status(200).json({
+                        message: "Created Successfully",
+                        result: card,
+                    });
                 })
-            }).catch(error=>{
-                next(error);
-            });
-        }catch(err){
+                .catch((error) => {
+                    next(error);
+                });
+        } catch (err) {
             next(err);
         }
     },
@@ -424,9 +498,8 @@ exports.updateProject = [
 
             res.json({
                 message: "Project updated successfully",
-               // project
+                // project
             });
-            
         } catch (err) {
             next(err);
         }
@@ -445,7 +518,7 @@ exports.addSkillsToProject = [
 
     async (req, res, next) => {
         try {
-             check_bad_request(req);
+            check_bad_request(req);
             const { id } = req.params; // Project ID from the URL
             const { skill_ids } = req.body; // Array of Skill IDs from the request body
             const project = await models.Project.findByPk(id);
@@ -531,28 +604,30 @@ exports.updateCard = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const {id,card_id} = req.params;
-            const { subject,details,user,project,due_date,}=req.body;
-            const users=await models.User.findByPk(user);
+            const { id, card_id } = req.params;
+            const { subject, details, user, project, due_date } = req.body;
+            const users = await models.User.findByPk(user);
 
-            if(!users){
-                throw new CustomError("User not found",404);
+            if (!users) {
+                throw new CustomError("User not found", 404);
             }
-            const updateCard={
-                subject:subject,
-                details:details,
-                user:user ,
-                project:project,
-                due_date:due_date,
-            }; 
+            const updateCard = {
+                subject: subject,
+                details: details,
+                user: user,
+                project: project,
+                due_date: due_date,
+            };
             const project_ = await models.Project.findByPk(id);
-            (is_project_admin(req, project_))
-            const card = await models.Card.findOne({where:{id:card_id,project:id}});
-            if (!card){
-                return res.status(404).json({error:"Card not found"});
+            is_project_admin(req, project_);
+            const card = await models.Card.findOne({
+                where: { id: card_id, project: id },
+            });
+            if (!card) {
+                return res.status(404).json({ error: "Card not found" });
             }
             await card.update(updateCard);
-            res.status(200).json({message:"Card updated successfully"});
+            res.status(200).json({ message: "Card updated successfully" });
         } catch (err) {
             next(err);
         }
@@ -570,32 +645,36 @@ exports.updateMemberRole = [
 
     async (req, res, next) => {
         try {
-        check_bad_request(req);
-        const { id, username } = req.params;
-        const { role } = req.body;
-        const project = await models.Project.findByPk(id);
-        is_project_admin(req, project);
+            check_bad_request(req);
+            const { id, username } = req.params;
+            const { role } = req.body;
+            const project = await models.Project.findByPk(id);
+            is_project_admin(req, project);
 
-        const user = await models.User.findOne({ where: { name: username } });
+            const user = await models.User.findOne({
+                where: { name: username },
+            });
             if (!user) {
                 return res.status(404).json({ message: "User not found" });
             }
             const projectUserAssociation = await models.UserProject.findOne({
                 where: {
                     ProjectId: id,
-                    UserId: user.id
-                }
+                    UserId: user.id,
+                },
             });
 
             if (!projectUserAssociation) {
-                return res.status(404).json({ message: "Project member not found" });
+                return res
+                    .status(404)
+                    .json({ message: "Project member not found" });
             }
             projectUserAssociation.role = role;
             await projectUserAssociation.save();
 
             res.status(200).json({
                 message: "Project member role updated successfully",
-                projectUser: projectUserAssociation
+                projectUser: projectUserAssociation,
             });
         } catch (err) {
             next(err);
@@ -615,13 +694,13 @@ exports.deleteSkillsFromProject = [
 
     async (req, res, next) => {
         try {
-             check_bad_request(req);
+            check_bad_request(req);
 
             const { id } = req.params; // Project ID from URL
             const { skill_id } = req.body; // Array of Skill IDs from the request body
             const project = await models.Project.findByPk(id);
 
-             is_project_admin(req, project);
+            is_project_admin(req, project);
             await project.removeSkills(skill_id);
 
             res.status(200).json({
@@ -645,7 +724,7 @@ exports.deleteMaterialsFromProject = [
 
     async (req, res, next) => {
         try {
-             check_bad_request(req);
+            check_bad_request(req);
 
             const { id } = req.params; // Project ID from URL
             const { material_id } = req.body; // Array of Material IDs from the request body
@@ -675,22 +754,26 @@ exports.deleteTeamMember = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-             const projectId = req.params.id;
-             const { name } = req.body;
-         const user = await models.User.findOne({
-            where: { name }
-        });
-         const userProject = await models.UserProject.findOne({
-            where: {
-                projectId: projectId,
-                userId: user.id
+            const projectId = req.params.id;
+            const { name } = req.body;
+            const user = await models.User.findOne({
+                where: { name },
+            });
+            const userProject = await models.UserProject.findOne({
+                where: {
+                    projectId: projectId,
+                    userId: user.id,
+                },
+            });
+            if (!userProject) {
+                return res.status(404).json({
+                    message: "Team member not associated with this project",
+                });
             }
-        });
-        if (!userProject) {
-            return res.status(404).json({ message: "Team member not associated with this project" });
-        }
-        await userProject.destroy();
-        res.status(200).json({ message: "Team member deleted successfully" });
+            await userProject.destroy();
+            res.status(200).json({
+                message: "Team member deleted successfully",
+            });
         } catch (err) {
             next(err);
         }
@@ -718,28 +801,28 @@ exports.deleteInvitation = [
 /**
  * delete project card by card ID
  */
-exports.deleteCard=[
+exports.deleteCard = [
     param("id").exists().toInt().isInt(),
     param("card_id").exists().toInt().isInt(),
 
-    async(req, res,next)=>{
+    async (req, res, next) => {
         try {
             check_bad_request(req);
             const cardId = req.params.card_id;
-            const projectid=req.params.id;
+            const projectid = req.params.id;
             const card = await models.Card.findByPk(cardId);
             if (!card) {
-                throw new CustomError("Card not found",404);
+                throw new CustomError("Card not found", 404);
             }
-            const project=await models.Project.findByPk(projectid);
-            if(!project){
-                throw new CustomError("Project not found",404);
+            const project = await models.Project.findByPk(projectid);
+            if (!project) {
+                throw new CustomError("Project not found", 404);
             }
-            is_project_admin(req,project);
+            is_project_admin(req, project);
             await card.destroy();
 
-            res.status(200).json({message:"Card deleted successfully"});
-        }catch(err){
+            res.status(200).json({ message: "Card deleted successfully" });
+        } catch (err) {
             next(err);
         }
     },
@@ -756,14 +839,14 @@ exports.deleteProject = [
         try {
             check_bad_request(req);
 
-        const projectId = req.params.id;
-        const project = await models.Project.findByPk(projectId);
-        is_project_admin(req, project);
-        await project.destroy();
+            const projectId = req.params.id;
+            const project = await models.Project.findByPk(projectId);
+            is_project_admin(req, project);
+            await project.destroy();
 
-        res.status(200).json({
-            message: "Project deleted successfully"
-        });
+            res.status(200).json({
+                message: "Project deleted successfully",
+            });
         } catch (err) {
             next(err);
         }
