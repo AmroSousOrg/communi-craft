@@ -42,7 +42,7 @@ exports.getProjectTeam = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            //const offset = getOffset(req);
+            const offset = getOffset(req);
             const { id } = req.params;
             const project = await models.Project.findByPk(id);
             is_exist(project);
@@ -55,6 +55,8 @@ exports.getProjectTeam = [
                         attributes: ["id", "name", "email"],
                     },
                 ],
+                limit:PAGE_SIZE,
+                offset: offset
             });
 
             if (!teamMembers.length) {
@@ -86,7 +88,7 @@ exports.getProjectMaterials = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            //  const offset = getOffset(req);
+            const offset = getOffset(req);
             const { id } = req.params;
             const project = await models.Project.findByPk(id);
             is_exist(project);
@@ -100,6 +102,8 @@ exports.getProjectMaterials = [
                         through: { attributes: [] },
                     },
                 ],
+                limit:PAGE_SIZE,
+                offset: offset
             });
             if (!materials.Materials.length) {
                 return res.status(404).json({
@@ -126,7 +130,7 @@ exports.getProjectSkills = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            // const offset = getOffset(req);
+            const offset = getOffset(req);
             const { id } = req.params;
             const project = await models.Project.findByPk(id);
             is_exist(project);
@@ -140,6 +144,8 @@ exports.getProjectSkills = [
                         through: { attributes: [] },
                     },
                 ],
+                limit:PAGE_SIZE,
+                offset: offset
             });
             if (!projectWithSkills.length) {
                 return res.status(404).json({
@@ -222,10 +228,12 @@ exports.getProjectCards = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            // const offset = getOffset(req);
+            const offset = getOffset(req);
             const projectId = req.params.id;
             const cards = await models.Card.findAll({
                 where: { project: projectId },
+                limit:PAGE_SIZE,
+                offset: offset
             });
 
             if (!cards.length) {
@@ -506,7 +514,6 @@ exports.sendInvitation = [
  *  - subject: String
  *  - details: String
  *  - username: String
- *  - project: Integer
  *  - due_date: Date
  */
 exports.addNewCard = [
@@ -514,16 +521,15 @@ exports.addNewCard = [
     check("subject").exists().isString(),
     check("details").exists().isString(),
     check("username").exists().isString(),
-    check("project").exists().toInt().isInt(),
     check("due_date").optional().isDate(),
 
     async (req, res, next) => {
         try {
-            // check_bad_request(req);
+            check_bad_request(req);
             const { id } = req.params;
             const { subject, details, username, due_date } = req.body;
 
-            const user = await models.User.findByPk(username);
+            const user = await models.User.findOne({where:{name:username}});
 
             if (!user) {
                 throw new CustomError("User not found", 404);
@@ -535,7 +541,7 @@ exports.addNewCard = [
             const cardInfo = {
                 subject: subject,
                 details: details,
-                user: username,
+                user: user.id,
                 project: id,
                 due_date: due_date,
             };
@@ -581,7 +587,7 @@ exports.updateProject = [
 
             res.json({
                 message: "Project updated successfully",
-                // project
+                project
             });
         } catch (err) {
             next(err);
@@ -602,8 +608,8 @@ exports.addSkillsToProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-            const { id } = req.params; // Project ID from the URL
-            const { skill_ids } = req.body; // Array of Skill IDs from the request body
+            const { id } = req.params; 
+            const { skill_ids } = req.body; 
             const project = await models.Project.findByPk(id);
             is_project_admin(req, project);
             await project.addSkills(skill_ids);
@@ -630,8 +636,8 @@ exports.addMaterialsToProject = [
         try {
             check_bad_request(req);
 
-            const { id } = req.params; // Project ID from URL
-            const { material_id } = req.body; // Array of Material IDs from the request body
+            const { id } = req.params; 
+            const { material_id } = req.body; 
             const project = await models.Project.findByPk(id);
             is_project_admin(req, project);
             await project.addMaterials(material_id);
@@ -774,9 +780,7 @@ exports.updateMemberRole = [
             const user = await models.User.findOne({
                 where: { name: username },
             });
-            if (!user) {
-                return res.status(404).json({ message: "User not found" });
-            }
+            is_exist(user);
             const projectUserAssociation = await models.UserProject.findOne({
                 where: {
                     ProjectId: id,
@@ -815,9 +819,8 @@ exports.deleteSkillsFromProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            const { id } = req.params; // Project ID from URL
-            const { skill_id } = req.body; // Array of Skill IDs from the request body
+            const { id } = req.params; 
+            const { skill_id } = req.body; 
             const project = await models.Project.findByPk(id);
 
             is_project_admin(req, project);
@@ -845,9 +848,8 @@ exports.deleteMaterialsFromProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
-            const { id } = req.params; // Project ID from URL
-            const { material_id } = req.body; // Array of Material IDs from the request body
+            const { id } = req.params; 
+            const { material_id } = req.body; 
 
             const project = await models.Project.findByPk(id);
             is_project_admin(req, project);
@@ -974,7 +976,6 @@ exports.deleteProject = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
-
             const projectId = req.params.id;
             const project = await models.Project.findByPk(projectId);
             is_project_admin(req, project);

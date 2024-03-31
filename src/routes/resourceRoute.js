@@ -14,10 +14,10 @@ const resourceController=require('../controllers/resourceController');
 router.get('/',resourceController.getAllResources);
 router.get('/search', resourceController.searchResources);
 router.get('/:id',resourceController.getResourcesById);
-router.put('/:id',validateAccessToken,resourceController.updateById);
+router.put('/:id',resourceController.updateById);
 router.put('/:id/buy',resourceController.buyResources);
-router.delete('/:id',validateAccessToken,resourceController.deleteById);
-router.post('/',validateAccessToken,resourceController.newResources);     
+router.delete('/:id',resourceController.deleteById);
+router.post('/',resourceController.newResources);     
 
 
 
