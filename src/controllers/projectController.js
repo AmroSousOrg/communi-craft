@@ -569,13 +569,44 @@ exports.addMaterialsToProject = [
 exports.respondToInvitation = [
     param("id").exists().toInt().isInt(),
     param("inv_id").exists().toInt().isInt(),
-    check("status").exists().isIn("Accepted", "Rejected"),
+    check("status").exists().isString().isIn("ACCEPTED", "REJECTED"),
 
     async (req, res, next) => {
         try {
             check_bad_request(req);
+            const { id, inv_id } = req.params;
+            const { status } = req.body;
+            const project = await models.Project.findByPk(id);
+            await is_project_admin(req, project); 
 
-            // your code here
+            const invitation = await models.Invitation.findOne({
+                where: { id: inv_id, projectId: id, type: 'RECEIVED', status: "PENDING" },
+            });
+            is_exist(invitation);
+
+            const isMember = await models.UserProject.findOne({
+                projectId: id, 
+                userId: invitation.receiverId,
+            });
+            if (isMember) {
+                await invitation.destroy();
+                return next(new CustomError("User is already a member in project.", 400));
+            }
+
+            await models.Invitation.update(
+                { status }, 
+                { where: { id: inv_id }},
+            );
+
+            if (status === "ACCEPTED") {
+                await models.UserProject.create({
+                    projectId: id, 
+                    userId: invitation.receiverId,
+                });
+            }
+
+            res.json({ message: `Invitation ${status} successfully` });
+
         } catch (err) {
             next(err);
         }
@@ -790,8 +821,19 @@ exports.deleteInvitation = [
     async (req, res, next) => {
         try {
             check_bad_request(req);
+            const { id, inv_id } = req.params;
+            const project = await models.Project.findByPk(id);
+            is_project_admin(req, project); 
 
-            // your code here
+            const invitation = await models.Invitation.findOne({
+                where: { id: inv_id, projectId: id, type: 'SENT', status: "PENDING" },
+            });
+            is_exist(invitation);
+            
+            await invitation.destroy();
+            res.status(200).json({
+                message: "Invitation deleted successfully",
+            });
         } catch (err) {
             next(err);
         }
