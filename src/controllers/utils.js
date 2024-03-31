@@ -9,6 +9,7 @@
 const { validationResult } = require("express-validator");
 const { UserProject } = require("../models");
 const CustomError = require('../util/customError');
+const e = require("express");
 const PAGE_SIZE = 20; 
 
 exports.PAGE_SIZE = PAGE_SIZE;     // exporting page-size to controllers
@@ -23,6 +24,7 @@ exports.PAGE_SIZE = PAGE_SIZE;     // exporting page-size to controllers
  */
 exports.check_bad_request = (req) => {
     const error = validationResult(req);
+    console.log(error);
     if (!error.isEmpty()) {
         throw new CustomError("Bad Request", 400);
     }

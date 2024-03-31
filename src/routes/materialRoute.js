@@ -11,23 +11,23 @@ const { validateAccessToken } = require('../middlewares/auth0.middleware');
  */
 router.get('/search', materialsController.searchMaterials);
 router.get('/:id', materialsController.getMaterialById);
-router.get('/', validateAccessToken, materialsController.getAllMaterials);
+router.get('/', materialsController.getAllMaterials);
 
 /**
  * PUT
  */
-router.put('/', validateAccessToken, materialsController.addMaterial);
+router.put('/', materialsController.addMaterial);
 
 
 /**
  * POST
  */
-router.post('/', validateAccessToken, materialsController.updateMaterial);
+router.post('/',materialsController.updateMaterial);
 
 /**
  * DELETE
  */
-router.delete('/:id', validateAccessToken, materialsController.deleteMaterial);
+router.delete('/:id', materialsController.deleteMaterial);
 
 
 module.exports = router; 
