@@ -330,18 +330,32 @@ exports.sendInvitation = [
         try {
             check_bad_request(req);
             const project_id = req.body.project_id;
-            await check_username_auth(req);
+            const { user } = await check_username_auth(req);
 
+            // check if project exist 
+            const project = await Project.findByPk(project_id); 
+            is_exist(project); 
+            
             const invit = {
-                type: "RECEIVED",
                 receiverId: req.auth.payload.sub,
                 projectId: project_id,
             };
 
-            const isExist = await Invitation.findOne({ where: invit });
+            const isMemeber = await UserProject.findOne({
+                where: {
+                    userId: user.id,
+                    projectId: project_id,
+                }
+            });
+            if (isMemeber) return next(new CustomError(`${user.name} is already member of project team.`, 400));
 
-            if (!isExist) await Invitation.create(invit);
+            const isExist = await Invitation.findOne({ where: {...invit, status: "PENDING"} });
+            if (isExist) {
+                if (isExist.type === "SENT") return next(new CustomError(`An invitation from ${project_id} project is already sent to ${name}.`, 400));
+                else return next(new CustomError(`An invitaion is already sent to join project with id ${project_id}`, 400));
+            }
 
+            await Invitation.create({...invit, type: "RECEIVED"});
             res.json({ message: "Invitation sent." });
         } catch (err) {
             next(err);

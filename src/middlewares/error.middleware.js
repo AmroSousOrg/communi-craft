@@ -22,7 +22,7 @@ const errorHandler = (err, req, res, next) => {
         message = "Permission denied";
     }
     else if (err instanceof InvalidTokenError) {
-        message = "Bad credentials";
+        message = "Invalid token.";
     }
     else if (err instanceof UnauthorizedError) {
         message = "Requires authentication";
