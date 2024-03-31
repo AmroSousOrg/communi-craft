@@ -6,6 +6,7 @@ const projectController = require("../controllers/projectController");
 /**
  * GET
  */
+router.get("/search", projectController.searchProject);
 router.get("/:id", projectController.getProjectById);                           
 router.get("/:id/team", projectController.getProjectTeam);                     
 router.get("/:id/materials", projectController.getProjectMaterials);           
@@ -17,7 +18,6 @@ router.get(
 );
 router.get("/:id/cards", projectController.getProjectCards);
 router.get("/:id/cards/:card_id", projectController.getCardById);
-router.get("/search", projectController.searchProject);
 
 /**
  * PUT

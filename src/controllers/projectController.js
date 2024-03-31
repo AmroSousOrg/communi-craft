@@ -169,10 +169,10 @@ exports.getSentInvitations = getProjectInvitations("SENT");
 exports.getReceivedInvitations = getProjectInvitations("RECEIVED");
 
 /**
- * Utility function that refactoring code for get invitaions controllers. 
- * 
+ * Utility function that refactoring code for get invitaions controllers.
+ *
  * @param {string} type - {SENT / RECEIVED}
- * @returns array of middlewares. 
+ * @returns array of middlewares.
  */
 function getProjectInvitations(type) {
     return [
@@ -210,7 +210,7 @@ function getProjectInvitations(type) {
             }
         },
     ];
-};
+}
 
 /**
  * get all project cards
@@ -284,21 +284,83 @@ exports.getCardById = [
  */
 exports.searchProject = [
     query("subtitle").optional().isString(),
-    query("level").optional().isArray(),
-    query("level.*").optional().isIn("Beginnere", "Intermediate", "Advanced"),
-    query("finished_after").optional().isDate(),
-    query("skills").optional().isArray(),
+    query("level").optional().toArray().isArray({ min: 1 }),
+    query("level.*").optional().isIn(["Beginner", "Intermediate", "Advanced"]),
+    query("created_after").optional().isDate(),
+    query("skills").optional().toArray().isArray({ min: 1 }),
     query("skills.*").optional().isString(),
-    query("materials").optional().isArray(),
+    query("materials").optional().toArray().isArray({ min: 1 }),
     query("materials.*").optional().isString(),
-    query("status").optional().isArray(),
+    query("status").optional().toArray().isArray({ min: 1 }),
     query("status.*").optional().isIn(["PLANNING", "PROGRESS", "FINISHED"]),
     query("location").optional().isString(),
 
     async (req, res, next) => {
         try {
+            check_bad_request(req);
             const offset = getOffset(req);
-            // your code here
+            const limit = PAGE_SIZE;
+            const where = {};
+            const include = [];
+
+            if (req.query.subtitle) {
+                where.title = { [Op.like]: `%${req.query.subtitle}%` };
+            }
+            if (req.query.level) {
+                where.level = { [Op.in]: req.query.level };
+            }
+            if (req.query.created_after) {
+                where.createdAt = { [Op.gte]: req.query.created_after };
+            }
+            if (req.query.skills) {
+                include.push({
+                    model: models.Skill,
+                    where: {
+                        title: {
+                            [Op.or]: req.query.skills.map((skill) => ({
+                                [Op.like]: `%${skill}%`,
+                            })),
+                        },
+                    },
+                    attributes: ['title', 'description'],
+                    through: { attributes: [] },
+                });
+            }
+            if (req.query.materials) {
+                include.push({
+                    model: models.Material,
+                    where: {
+                        title: {
+                            [Op.or]: req.query.materials.map((material) => ({
+                                [Op.like]: `%${material}%`,
+                            })),
+                        },
+                    },
+                    attributes: ['title', 'description'],
+                    through: { attributes: [] },
+                });
+            }
+            if (req.query.status) {
+                where.status = { [Op.in]: req.query.status };
+            }
+            if (req.query.location) {
+                where.location = { [Op.like]: `%${req.query.location}%` };
+            }
+
+            const { count, rows: projects } =
+                await models.Project.findAndCountAll({
+                    where: where,
+                    include: include,
+                    offset: offset,
+                    limit: limit,
+                    logging: console.log,
+                });
+
+            res.json({
+                totalCount: count,
+                returnedCount: projects.length,
+                projects: projects,
+            });
         } catch (err) {
             next(err);
         }
@@ -376,30 +438,50 @@ exports.sendInvitation = [
             const { id } = req.params;
             const { username } = req.body;
             const project = await models.Project.findByPk(id);
-            const user = await models.User.findOne({ where: { name: username }});
+            const user = await models.User.findOne({
+                where: { name: username },
+            });
             is_exist(user);
             await is_project_admin(req, project);
 
             // check if user is in the team
             const isMember = await models.UserProject.findOne({
                 where: {
-                    userId: user.id, 
-                    projectId: project.id
-                }
+                    userId: user.id,
+                    projectId: project.id,
+                },
             });
-            if (isMember) return next(new CustomError("This user is already a member in project team.", 400));
+            if (isMember)
+                return next(
+                    new CustomError(
+                        "This user is already a member in project team.",
+                        400
+                    )
+                );
 
-            // check if invitaion was send previously and is PENDING 
+            // check if invitaion was send previously and is PENDING
             const isSent = await models.Invitation.findOne({
                 where: {
-                    projectId: project.id, 
+                    projectId: project.id,
                     receiverId: user.id,
-                    status: "PENDING"
-                }
+                    status: "PENDING",
+                },
             });
             if (isSent) {
-                if (isSent.type === "SENT") return next(new CustomError("An invitation is already sent to user.", 400));
-                else return next(new CustomError("An invitation is already received from the user to join this project", 400));
+                if (isSent.type === "SENT")
+                    return next(
+                        new CustomError(
+                            "An invitation is already sent to user.",
+                            400
+                        )
+                    );
+                else
+                    return next(
+                        new CustomError(
+                            "An invitation is already received from the user to join this project",
+                            400
+                        )
+                    );
             }
 
             // send invitaion
@@ -408,8 +490,9 @@ exports.sendInvitation = [
                 receiverId: user.id,
                 type: "SENT",
             });
-            res.json({ message: `Invitation to ${username} sent successfully.` });
-            
+            res.json({
+                message: `Invitation to ${username} sent successfully.`,
+            });
         } catch (err) {
             next(err);
         }
@@ -577,36 +660,42 @@ exports.respondToInvitation = [
             const { id, inv_id } = req.params;
             const { status } = req.body;
             const project = await models.Project.findByPk(id);
-            await is_project_admin(req, project); 
+            await is_project_admin(req, project);
 
             const invitation = await models.Invitation.findOne({
-                where: { id: inv_id, projectId: id, type: 'RECEIVED', status: "PENDING" },
+                where: {
+                    id: inv_id,
+                    projectId: id,
+                    type: "RECEIVED",
+                    status: "PENDING",
+                },
             });
             is_exist(invitation);
 
             const isMember = await models.UserProject.findOne({
-                projectId: id, 
+                projectId: id,
                 userId: invitation.receiverId,
             });
             if (isMember) {
                 await invitation.destroy();
-                return next(new CustomError("User is already a member in project.", 400));
+                return next(
+                    new CustomError("User is already a member in project.", 400)
+                );
             }
 
             await models.Invitation.update(
-                { status }, 
-                { where: { id: inv_id }},
+                { status },
+                { where: { id: inv_id } }
             );
 
             if (status === "ACCEPTED") {
                 await models.UserProject.create({
-                    projectId: id, 
+                    projectId: id,
                     userId: invitation.receiverId,
                 });
             }
 
             res.json({ message: `Invitation ${status} successfully` });
-
         } catch (err) {
             next(err);
         }
@@ -823,13 +912,18 @@ exports.deleteInvitation = [
             check_bad_request(req);
             const { id, inv_id } = req.params;
             const project = await models.Project.findByPk(id);
-            is_project_admin(req, project); 
+            is_project_admin(req, project);
 
             const invitation = await models.Invitation.findOne({
-                where: { id: inv_id, projectId: id, type: 'SENT', status: "PENDING" },
+                where: {
+                    id: inv_id,
+                    projectId: id,
+                    type: "SENT",
+                    status: "PENDING",
+                },
             });
             is_exist(invitation);
-            
+
             await invitation.destroy();
             res.status(200).json({
                 message: "Invitation deleted successfully",
