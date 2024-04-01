@@ -6,14 +6,17 @@
 
 // global packages
 const express = require("express");
+const http = require("http");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const socketIO = require("socket.io");
 require("dotenv").config();
 
 // our packages
 const sequelize = require("./util/database");
+const SocketManager = require("./util/socket.io");
 const corsConfig = require("./config/cors");
 const helmetConfig = require("./config/helmet");
 const { errorHandler } = require("./middlewares/error.middleware");
@@ -46,10 +49,26 @@ app.use(helmet(helmetConfig));
 // morgan: logging requests
 app.use(morgan("combined"));
 
+// instantiate socketManager to send notifications
+const httpServer = http.createServer(app);
+const io = socketIO(httpServer);
+const socketManager = new SocketManager(io);
+
+// Append socketManager to req variable in a middleware
+const appendSocketManager = (req, res, next) => {
+    req.socketManager = socketManager;
+    next();
+};
+
 // routers configuration
 // protected by auth middlwares
 // requires user have account (except createUser)
-app.use("/api", [validateAccessToken, checkValidAccount], routers);
+// append socketManager to req variable
+app.use(
+    "/api",
+    [validateAccessToken, checkValidAccount, appendSocketManager],
+    routers
+);
 
 // error handlers
 app.use(errorHandler);

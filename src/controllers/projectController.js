@@ -498,6 +498,12 @@ exports.sendInvitation = [
                 receiverId: user.id,
                 type: "SENT",
             });
+
+            const socketManager = req.socketManager;
+            await socketManager.sendNotification(user.id, {
+                message: "you have an invitation to join project with id: " + project.id,
+            });
+
             res.json({
                 message: `Invitation to ${username} sent successfully.`,
             });
@@ -700,6 +706,11 @@ exports.respondToInvitation = [
                     userId: invitation.receiverId,
                 });
             }
+
+            const socketManager = req.socketManager; 
+            await socketManager.sendNotification(invitation.receiverId, {
+                message: `you join request to project with id: ${id}, was ${status} by admin.`,
+            });
 
             res.json({ message: `Invitation ${status} successfully` });
         } catch (err) {
