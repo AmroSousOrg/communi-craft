@@ -3,6 +3,8 @@
 
 A **RESTful API** for building	bridges	through	collaborative craftsmanship, using **Node.js**. 
 
+**Base URL** `http://localhost:8080/api/`
+
 ## Installation
 
 To install the project on your machine
@@ -25,6 +27,24 @@ To install the project on your machine
 
 ```bash
   npm start
+```
+
+you need to make .env file for database and auth configuration
+
+```bash
+# .env
+
+DB_HOST=localhost
+DB_USER=aswp_team
+DB_PASS=password12345
+DB_NAME=communi_db
+
+PORT=8080
+```
+
+- to run reac-auth-sample for authentication tokens run
+```bash
+  npm run auth
 ```
 
 - periodically you have to pull changes made by other developers to you local repo
@@ -70,15 +90,15 @@ other developers before merge with dev branch.
 
 ## Links
 
-[postman workspace](https://aswp-team.postman.co/workspace/CommuniCraft~ec8a19c9-86ca-4426-a31e-cbedbb189393)
+[apidog workspace](https://app.apidog.com/project/467103)
 ## Files Structure
 
 ![File Structure](./screenshots/file_structure.png?raw=true "File Structure")
 
 ## Authors
 
-- [@Amro Sous](https://github.com/AmroSous)
 - [@Adam Akram](https://github.com/Adamakram02)
 - [@Ahmad Atallah](https://github.com/Ahmadatalla)
-- [@Ibrahim Qadi](https://github.com/IbraheemQadi)
+- [@Amro Sous](https://github.com/AmroSous)
+- [@Ibraheem Qadi](https://github.com/IbraheemQadi)
 

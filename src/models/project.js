@@ -9,13 +9,26 @@ const Project = sequelize.define(
             type: Sequelize.STRING, 
             allowNull: false
         }, 
-        description: Sequelize.TEXT, 
+        description: {
+            type: Sequelize.TEXT,
+        },
+        isPublic: {
+            type: Sequelize.BOOLEAN,
+            defaultValue: true
+        },
         level: {
             type: Sequelize.ENUM, 
-            values: ['Biginner', 'Intermediate', 'Advanced'],
+            values: ['Beginner', 'Intermediate', 'Advanced'],
             allowNull: false
-        }, 
-        finishedAt: Sequelize.DATE
+        },
+        status: {
+            type: Sequelize.ENUM,
+            values: ['PLANNING', 'PROGRESS', 'FINISHED'],
+            defaultValue: 'PLANNING',
+        },
+        location: {
+            type: Sequelize.STRING,
+        }
     }
 );
 
